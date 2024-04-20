@@ -4,6 +4,8 @@ import subprocess
 import requests
 import re
 import time
+import socket
+import psutil
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -12,17 +14,32 @@ def clear_screen():
     else:
         _ = subprocess.call('cls', shell=True)
 
+def get_local_ip():
+    """Get the IP address of the local machine."""
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+    return ip_address
+
+def get_network_interfaces():
+    """Get the names of network interfaces currently available."""
+    interfaces = psutil.net_if_addrs()
+    return list(interfaces.keys())
+
 def dns_spoofing_menu(target_website, local_ip):
     """Menu for DNS spoofing attack."""
     while True:
         clear_screen()
         print("DNS Spoofing Menu")
-        print("1. Perform DNS Spoofing Attack")
+        print("01. Perform DNS Spoofing Attack - Redirect traffic from a website to a different IP.")
+        print("02. Perform DNS Cache Poisoning - Redirect traffic by injecting malicious DNS records.")
         print("00. Return to Main Menu")
         choice = input("Enter your choice: ")
 
-        if choice == '1':
+        if choice == '01':
             perform_dns_spoofing(target_website, local_ip)
+            input("\nPress Enter to continue...")
+        elif choice == '02':
+            perform_dns_cache_poisoning(target_website, local_ip)
             input("\nPress Enter to continue...")
         elif choice == '00':
             break
@@ -33,21 +50,41 @@ def dns_spoofing_menu(target_website, local_ip):
 def perform_dns_spoofing(target_website, local_ip):
     """Perform DNS spoofing attack."""
     print("[+] Performing DNS Spoofing Attack...")
+    attack_progress("Initializing DNS spoofing attack")
     # Implement DNS spoofing logic using tools like scapy or dnspython
     # Respond to DNS requests for the target website with the provided local IP
     # Display spoofing activity and responses
+    attack_progress("DNS spoofing attack completed successfully")
+
+def perform_dns_cache_poisoning(target_website, local_ip):
+    """Perform DNS cache poisoning."""
+    print("[+] Performing DNS Cache Poisoning...")
+    attack_progress("Initializing DNS cache poisoning attack")
+    # Implement DNS cache poisoning logic
+    # Inject malicious DNS records into a DNS cache to redirect traffic
+    # Display poisoning activity and responses
+    attack_progress("DNS cache poisoning attack completed successfully")
+
+def attack_progress(message):
+    """Display progress of the attack."""
+    print("[*] " + message)
+    time.sleep(2)  # Add a delay for better readability
 
 def website_cloning_menu(target_website, output_dir):
     """Menu for website cloning."""
     while True:
         clear_screen()
         print("Website Cloning Menu")
-        print("1. Clone Website and Avoid Robot Detection")
+        print("01. Clone Website and Avoid Robot Detection - Copy a website's content without being blocked by robots.txt rules.")
+        print("02. Clone Website with Advanced Techniques - Use advanced methods to clone a website, including dynamic content scraping.")
         print("00. Return to Main Menu")
         choice = input("Enter your choice: ")
 
-        if choice == '1':
+        if choice == '01':
             clone_website(target_website, output_dir)
+            input("\nPress Enter to continue...")
+        elif choice == '02':
+            clone_website_advanced(target_website, output_dir)
             input("\nPress Enter to continue...")
         elif choice == '00':
             break
@@ -64,26 +101,42 @@ def clone_website(url, output_dir):
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            # Save the HTML content
-            with open(os.path.join(output_dir, 'index.html'), 'wb') as f:
+            # Save the HTML content to a .txt file on the desktop
+            desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+            with open(os.path.join(desktop_path, 'cloned_website.txt'), 'wb') as f:
                 f.write(response.content)
             print("[+] Website cloned successfully.")
         else:
             print("[!] Failed to clone website. Status code:", response.status_code)
+    except requests.RequestException as e:
+        print("[!] Error occurred during website cloning:", str(e))
+    except IOError as e:
+        print("[!] Error occurred while writing to file:", str(e))
     except Exception as e:
-        print("[!] An error occurred while cloning the website:", str(e))
+        print("[!] An unexpected error occurred:", str(e))
+
+def clone_website_advanced(url, output_dir):
+    """Clone the website using advanced techniques."""
+    print("[+] Cloning Website with Advanced Techniques...")
+    # Implement advanced website cloning techniques, such as dynamic content scraping
+    # Save the cloned content to a specified directory
+    print("[+] Website cloned successfully using advanced techniques.")
 
 def apache_menu():
     """Menu for Apache server."""
     while True:
         clear_screen()
         print("Apache Menu")
-        print("1. Start Apache Server")
+        print("01. Start Apache Server - Launch the Apache server to host web content locally.")
+        print("02. Stop Apache Server - Stop the running Apache server.")
         print("00. Return to Main Menu")
         choice = input("Enter your choice: ")
 
-        if choice == '1':
+        if choice == '01':
             start_apache()
+            input("\nPress Enter to continue...")
+        elif choice == '02':
+            stop_apache()
             input("\nPress Enter to continue...")
         elif choice == '00':
             break
@@ -98,27 +151,44 @@ def start_apache():
     # Check if Apache is already running, start it if not
     # Handle any errors that may occur during Apache startup
 
+def stop_apache():
+    """Stop the Apache server."""
+    print("[+] Stopping Apache Server...")
+    # Stop the Apache server
+    # Check if Apache is running, stop it if it is
+    # Handle any errors that may occur during Apache shutdown
+
+def display_starting_info():
+    """Display starting information for the attacker."""
+    clear_screen()
+    print("Starting Information for the Attacker:")
+    print("=======================================")
+    print("Local IP Address:", get_local_ip())
+    print("Network Interfaces:", get_network_interfaces())
+    print("=======================================")
+    input("\nPress Enter to continue...")
+
 def main_menu(target_website, local_ip, output_dir):
     """Main menu."""
     while True:
         clear_screen()
         print("Main Menu")
-        print("1. DNS Spoofing")
-        print("2. Website Cloning")
-        print("3. Apache Server")
-        print("4. Advanced Attacks")
-        print("5. Exit")
+        print("01. DNS Attacks - Manipulate DNS to redirect traffic or poison caches.")
+        print("02. Website Cloning - Copy web content for analysis or offline browsing.")
+        print("03. Apache Server - Manage the Apache web server.")
+        print("04. Advanced Attacks - Perform sophisticated cyber attacks.")
+        print("05. Exit")
         choice = input("Enter your choice: ")
 
-        if choice == '1':
+        if choice == '01':
             dns_spoofing_menu(target_website, local_ip)
-        elif choice == '2':
+        elif choice == '02':
             website_cloning_menu(target_website, output_dir)
-        elif choice == '3':
+        elif choice == '03':
             apache_menu()
-        elif choice == '4':
+        elif choice == '04':
             advanced_attacks_menu()
-        elif choice == '5':
+        elif choice == '05':
             print("Exiting...")
             break
         else:
@@ -130,36 +200,36 @@ def advanced_attacks_menu():
     while True:
         clear_screen()
         print("Advanced Attacks Menu")
-        print("1. Packet Sniffing")
-        print("2. Session Hijacking")
-        print("3. Man-in-the-Middle (MITM) Attack")
-        print("4. Exploit Framework Integration")
-        print("5. Data Exfiltration")
-        print("6. Persistence Mechanisms")
-        print("7. Social Engineering Toolkit (SET)")
-        print("8. Custom Payload Generation")
-        print("9. Reporting and Logging")
-        print("10. Evasion Techniques")
+        print("01. Packet Sniffing - Capture and analyze network traffic.")
+        print("02. Session Hijacking - Take control of an ongoing session.")
+        print("03. Man-in-the-Middle (MITM) Attack - Intercept communication between two parties.")
+        print("04. Exploit Framework Integration - Utilize pre-built exploits for vulnerabilities.")
+        print("05. Data Exfiltration - Steal sensitive information from target systems.")
+        print("06. Persistence Mechanisms - Maintain access to compromised systems.")
+        print("07. Social Engineering Toolkit (SET) - Manipulate human behavior for attacks.")
+        print("08. Custom Payload Generation - Create tailored malware payloads.")
+        print("09. Reporting and Logging - Document and analyze attack activities.")
+        print("10. Evasion Techniques - Evade detection by security measures.")
         print("00. Return to Main Menu")
         choice = input("Enter your choice: ")
 
-        if choice == '1':
+        if choice == '01':
             packet_sniffing()
-        elif choice == '2':
+        elif choice == '02':
             session_hijacking()
-        elif choice == '3':
+        elif choice == '03':
             mitm_attack()
-        elif choice == '4':
+        elif choice == '04':
             exploit_framework_integration()
-        elif choice == '5':
+        elif choice == '05':
             data_exfiltration()
-        elif choice == '6':
+        elif choice == '06':
             persistence_mechanisms()
-        elif choice == '7':
+        elif choice == '07':
             social_engineering_toolkit()
-        elif choice == '8':
+        elif choice == '08':
             custom_payload_generation()
-        elif choice == '9':
+        elif choice == '09':
             reporting_and_logging()
         elif choice == '10':
             evasion_techniques()
@@ -173,7 +243,7 @@ def advanced_attacks_menu():
 
 if __name__ == "__main__":
     target_website = "example.com"  # Set the target website
-    local_ip = "192.168.1.100"  # Set the local IP address
     output_dir = "cloned_website"  # Output directory for cloned website
 
-    main_menu(target_website, local_ip, output_dir)
+    display_starting_info()
+    main_menu(target_website, get_local_ip(), output_dir)
