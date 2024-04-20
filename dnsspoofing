@@ -38,12 +38,15 @@ class NmapScanWindow:
         self.progress_label = tk.Label(self.root, text="Scanning in progress...")
         self.progress_label.pack(padx=10, pady=5)
 
-        self.progress_bar = ttk.Progressbar(self.root, orient="horizontal", length=200, mode="indeterminate")
+        self.progress_bar = ttk.Progressbar(self.root, orient="horizontal", length=200, mode="determinate")
         self.progress_bar.pack(padx=10, pady=5)
-        self.progress_bar.start()
 
         self.scan_result_text = tk.Text(self.root, height=15, width=50)
         self.scan_result_text.pack(padx=10, pady=5)
+
+    def update_scan_progress(self, percent):
+        self.progress_bar["value"] = percent
+        self.root.update()
 
     def update_scan_results(self, results):
         self.scan_result_text.insert(tk.END, results)
@@ -122,9 +125,13 @@ class DNS_Spoofing_Tool:
                     result = f"IP: {host}, Manufacturer: {manufacturer}\n"
                     self.scan_window.update_scan_results(result)
 
+                # Callback function to update UI with scan progress
+                def callback_progress(current, total):
+                    percent = int((current / total) * 100)
+                    self.scan_window.update_scan_progress(percent)
+
                 # Scan hosts in the given IP range
-                nm.scan(hosts=ip_range_input, arguments='-sn', callback=callback_result)
-                threading.Thread(target=self.scan_window.root.mainloop).start()
+                nm.scan(hosts=ip_range_input, arguments='-sn', callback=callback_result, callback_progress=callback_progress)
 
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred while scanning IPs: {str(e)}")
