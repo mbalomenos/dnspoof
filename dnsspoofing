@@ -94,13 +94,16 @@ class DNS_Spoofing_Tool:
             if ip_range_input:
                 # Perform a network scan to identify other devices on the network
                 nm = nmap.PortScanner()
-                nm.scan(hosts=ip_range_input, arguments='-sn')
 
-                # Display the results in the text field
-                self.target_ips_text.delete(1.0, tk.END)  # Clear previous results
-                for host in nm.all_hosts():
-                    manufacturer = nm[host]['vendor'].get('mac') if 'vendor' in nm[host] else "Unknown"
+                # Callback function to update UI with scan results
+                def callback_result(host, scan_result):
+                    manufacturer = scan_result['vendor'].get('mac') if 'vendor' in scan_result else "Unknown"
                     self.target_ips_text.insert(tk.END, f"IP: {host}, Manufacturer: {manufacturer}\n")
+                    self.root.update()  # Update the UI
+
+                # Scan hosts in the given IP range
+                nm.scan(hosts=ip_range_input, arguments='-sn', callback=callback_result)
+
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred while scanning IPs: {str(e)}")
 
