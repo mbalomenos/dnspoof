@@ -95,12 +95,25 @@ def clone_website(clone_type):
     # 4. Prompt the user for the URL of the website to clone
     website_url = input("Enter the URL of the website to clone: ")
     # 5. Prompt the user to choose the output directory
-    output_directory = input("Enter the output directory to save the cloned website (.txt file):\n" 
-                             "01. /path/to/directory1\n" 
-                             "02. /path/to/directory2\n"
-                             "03. /path/to/directory3\n"
-                             "...\n"
-                             "Enter your choice: ")
+    print("Choose where to save the cloned website:")
+    print("01. /path/to/directory1")
+    print("02. /path/to/directory2")
+    print("03. /path/to/directory3")
+    print("04. Desktop")
+    output_choice = input("Enter your choice: ")
+
+    if output_choice == '01':
+        output_directory = "/path/to/directory1"
+    elif output_choice == '02':
+        output_directory = "/path/to/directory2"
+    elif output_choice == '03':
+        output_directory = "/path/to/directory3"
+    elif output_choice == '04':
+        output_directory = os.path.expanduser("~/Desktop")
+    else:
+        print("Invalid choice. Defaulting to desktop directory.")
+        output_directory = os.path.expanduser("~/Desktop")
+
     # 6. Save the cloned website to the specified output directory
     save_cloned_website(website_url, output_directory)
 
