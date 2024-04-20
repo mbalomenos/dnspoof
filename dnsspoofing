@@ -3,7 +3,7 @@ import subprocess
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 import netifaces
-import nmap
+import nmap3  # Corrected Nmap import
 import threading
 
 class Tooltip:
@@ -116,11 +116,11 @@ class DNS_Spoofing_Tool:
             if ip_range_input:
                 self.scan_window = NmapScanWindow(self.root, ip_range_input)
                 # Perform a network scan to identify other devices on the network
-                nm = nmap.PortScanner()
+                nm = nmap3.Nmap()
 
                 # Callback function to update UI with scan results
                 def callback_result(host, scan_result):
-                    manufacturer = scan_result['vendor'].get('mac') if 'vendor' in scan_result else "Unknown"
+                    manufacturer = scan_result.get('vendor') if 'vendor' in scan_result else "Unknown"
                     result = f"IP: {host}, Manufacturer: {manufacturer}\n"
                     self.scan_window.update_scan_results(result)
 
@@ -130,17 +130,19 @@ class DNS_Spoofing_Tool:
                     self.scan_window.update_scan_progress(percent)
 
                 # Scan hosts in the given IP range
-                nm.scan(hosts=ip_range_input, arguments='-sn', callback=callback_result, callback_progress=callback_progress)
+                nm.scan_top_ports(ip_range_input, callback=callback_result, callback_progress=callback_progress)
 
                 # Add handling for Nmap errors
-                if nm.all_hosts():
-                    messagebox.showinfo("Scan Completed", "IP scan completed successfully!")
-                else:
-                    messagebox.showinfo("Scan Completed", "No hosts found in the specified IP range.")
+                messagebox.showinfo("Scan Completed", "IP scan completed successfully!")
 
-        except nmap.PortScannerError as e:
+        except nmap3.exceptions.NmapExecutionError as e:
             messagebox.showerror("Nmap Error", f"Nmap encountered an error: {e}")
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred while scanning IPs: {str(e)}")
 
     # Other methods remain unchanged
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    dns_spoofing_tool = DNS_Spoofing_Tool(root)
+    root.mainloop()
