@@ -119,8 +119,17 @@ def clone_website(clone_type):
 
 def save_cloned_website(website_url, output_dir):
     """Save the cloned website to the specified output directory."""
-    # The logic to save the cloned website goes here
-    pass
+    try:
+        # Create the output directory if it doesn't exist
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        # Use wget to clone the website
+        subprocess.run(["wget", "--recursive", "--no-clobber", "--page-requisites", "--html-extension", "--convert-links", "--restrict-file-names=windows", "--domains", website_url, "--no-parent", website_url, "-P", output_dir])
+
+        print("[+] Website cloned successfully.")
+    except Exception as e:
+        print("[-] Error occurred while cloning website:", str(e))
 
 def apache_menu():
     """Menu for Apache server."""
