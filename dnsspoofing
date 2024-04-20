@@ -128,6 +128,11 @@ def save_cloned_website(website_url, output_dir):
         subprocess.run(["wget", "--recursive", "--no-clobber", "--page-requisites", "--html-extension", "--convert-links", "--restrict-file-names=windows", "--domains", website_url, "--no-parent", website_url, "-P", output_dir])
 
         print("[+] Website cloned successfully.")
+
+        # Create a text file to indicate successful cloning
+        with open(os.path.join(output_dir, "cloned_website.txt"), "w") as f:
+            f.write(f"The website {website_url} was successfully cloned.")
+
     except Exception as e:
         print("[-] Error occurred while cloning website:", str(e))
 
