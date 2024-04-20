@@ -89,26 +89,20 @@ class DNS_Spoofing_Tool:
 
     def scan_ips(self):
         try:
-            # Perform a network scan to identify other devices on the network
-            ip_range = self.get_ip_range()
-            nm = nmap.PortScanner()
-            nm.scan(hosts=ip_range, arguments='-sn')
+            # Retrieve IP range from user input
+            ip_range_input = simpledialog.askstring("IP Range", "Enter IP range (e.g., 192.168.0.0/24):")
+            if ip_range_input:
+                # Perform a network scan to identify other devices on the network
+                nm = nmap.PortScanner()
+                nm.scan(hosts=ip_range_input, arguments='-sn')
 
-            # Display the results in the text field
-            self.target_ips_text.delete(1.0, tk.END)  # Clear previous results
-            for host in nm.all_hosts():
-                manufacturer = nm[host]['vendor'].get('mac') if 'vendor' in nm[host] else "Unknown"
-                self.target_ips_text.insert(tk.END, f"IP: {host}, Manufacturer: {manufacturer}\n")
+                # Display the results in the text field
+                self.target_ips_text.delete(1.0, tk.END)  # Clear previous results
+                for host in nm.all_hosts():
+                    manufacturer = nm[host]['vendor'].get('mac') if 'vendor' in nm[host] else "Unknown"
+                    self.target_ips_text.insert(tk.END, f"IP: {host}, Manufacturer: {manufacturer}\n")
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred while scanning IPs: {str(e)}")
-
-    def get_ip_range(self):
-        # Retrieve IP range from user input
-        ip_range_input = simpledialog.askstring("IP Range", "Enter IP range (e.g., 192.168.0.0/24):")
-        if ip_range_input:
-            return ip_range_input
-        else:
-            raise ValueError("Invalid IP range")
 
     def download_website(self, url, folder_path):
         # Download website contents and save locally
