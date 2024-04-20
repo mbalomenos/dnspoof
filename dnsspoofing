@@ -5,6 +5,7 @@ import subprocess
 import requests
 import re
 import time
+import socket
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -29,6 +30,14 @@ def get_network_interfaces():
     """Get the names of network interfaces."""
     return ['lo', 'enp0s3', 'wlx00c0cab4f560']  # Example network interfaces
 
+def get_dns_server_ip():
+    """Get the DNS server IP address."""
+    try:
+        dns_ip = socket.gethostbyname(socket.gethostname())
+        return dns_ip
+    except:
+        return None
+
 def dns_spoofing_menu():
     """Menu for DNS spoofing attack."""
     while True:
@@ -42,7 +51,12 @@ def dns_spoofing_menu():
         choice = input("Enter your choice: ")
 
         if choice == '01':
-            perform_dns_spoofing()
+            dns_server_ip = get_dns_server_ip()
+            if dns_server_ip:
+                print("DNS Server IP Address:", dns_server_ip)
+                perform_dns_spoofing(dns_server_ip)
+            else:
+                print("Failed to retrieve DNS server IP address.")
             input("\nPress Enter to continue...")
         elif choice == '00':
             break
@@ -50,11 +64,10 @@ def dns_spoofing_menu():
             print("Invalid choice. Please enter a valid option.")
             time.sleep(2)
 
-def perform_dns_spoofing():
+def perform_dns_spoofing(dns_server_ip):
     """Perform DNS spoofing attack."""
     print("[+] Performing DNS Spoofing Attack...")
     target_ip = input("Enter the target IP address: ")
-    dns_server_ip = input("Enter the DNS server IP address: ")
     target_domain = input("Enter the target domain to spoof: ")
     spoofed_ip = input("Enter the IP address to spoof: ")
 
