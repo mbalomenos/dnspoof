@@ -92,10 +92,17 @@ def clone_website(clone_type):
         print("[+] Cloning website with basic techniques...")
     elif clone_type == "advanced":
         print("[+] Cloning website with advanced techniques...")
-    # 4. Save the cloned website to the specified output directory
-    output_directory = input("Enter the output directory to save the cloned website: ")
-    print("[+] Website cloned successfully.")
-    print("[+] Cloned website saved in:", output_directory)
+    # 4. Prompt the user for the URL of the website to clone
+    website_url = input("Enter the URL of the website to clone: ")
+    # 5. Prompt the user to choose the output directory
+    output_directory = input("Enter the output directory to save the cloned website (.txt file): ")
+    # 6. Save the cloned website to the specified output directory
+    save_cloned_website(website_url, output_directory)
+
+def save_cloned_website(website_url, output_dir):
+    """Save the cloned website to the specified output directory."""
+    # The logic to save the cloned website goes here
+    pass
 
 def apache_menu():
     """Menu for Apache server."""
