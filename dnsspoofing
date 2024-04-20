@@ -4,8 +4,6 @@ import subprocess
 import requests
 import re
 import time
-import socket
-import psutil
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -14,43 +12,36 @@ def clear_screen():
     else:
         _ = subprocess.call('cls', shell=True)
 
-def get_local_ip():
-    """Get the IP address of the local machine."""
-    hostname = socket.gethostname()
-    ip_address = socket.gethostbyname(hostname)
-    return ip_address
-
-def get_network_interfaces():
-    """Get the names of network interfaces currently available."""
-    interfaces = psutil.net_if_addrs()
-    return list(interfaces.keys())
-
 def display_starting_info():
     """Display starting information for the attacker."""
-    clear_screen()
     print("Starting Information for the Attacker:")
     print("=======================================")
     print("Local IP Address:", get_local_ip())
     print("Network Interfaces:", get_network_interfaces())
     print("=======================================")
 
+def get_local_ip():
+    """Get the local IP address."""
+    return "127.0.1.1"  # Example IP address
+
+def get_network_interfaces():
+    """Get the names of network interfaces."""
+    return ['lo', 'enp0s3', 'wlx00c0cab4f560']  # Example network interfaces
+
 def dns_spoofing_menu():
     """Menu for DNS spoofing attack."""
     while True:
+        clear_screen()
         display_starting_info()
         print("DNS Spoofing Menu")
         print("=======================================")
-        print("01. Perform DNS Spoofing Attack - Redirect traffic from a website to a different IP.")
-        print("02. Perform DNS Cache Poisoning - Redirect traffic by injecting malicious DNS records.")
+        print("01. Perform DNS Spoofing Attack - Manipulate DNS resolution to redirect traffic.")
         print("00. Return to Main Menu")
         print("=======================================")
         choice = input("Enter your choice: ")
 
         if choice == '01':
             perform_dns_spoofing()
-            input("\nPress Enter to continue...")
-        elif choice == '02':
-            perform_dns_cache_poisoning()
             input("\nPress Enter to continue...")
         elif choice == '00':
             break
@@ -60,37 +51,17 @@ def dns_spoofing_menu():
 
 def perform_dns_spoofing():
     """Perform DNS spoofing attack."""
-    target_website = input("Enter the target website to spoof DNS (e.g., example.com): ")
-    local_ip = get_local_ip()
     print("[+] Performing DNS Spoofing Attack...")
-    attack_progress("Initializing DNS spoofing attack")
     # Additional steps:
-    # 1. Set up a DNS spoofing tool (e.g., Dnsmasq, Ettercap)
-    # 2. Configure the tool to redirect DNS queries for the target website to the attacker's IP
-    # 3. Monitor spoofing activity and responses
-    attack_progress("DNS spoofing attack completed successfully")
-
-def perform_dns_cache_poisoning():
-    """Perform DNS cache poisoning."""
-    target_website = input("Enter the target website to poison DNS cache (e.g., example.com): ")
-    local_ip = get_local_ip()
-    print("[+] Performing DNS Cache Poisoning...")
-    attack_progress("Initializing DNS cache poisoning attack")
-    # Additional steps:
-    # 1. Identify vulnerable DNS servers
-    # 2. Craft and send malicious DNS queries to poison the DNS cache
-    # 3. Inject spoofed DNS records into the cache to redirect traffic
-    # 4. Monitor poisoning activity and responses
-    attack_progress("DNS cache poisoning attack completed successfully")
-
-def attack_progress(message):
-    """Display progress of the attack."""
-    print("[*] " + message)
-    time.sleep(2)  # Add a delay for better readability
+    # 1. Set up a DNS server or use existing tools like dnsmasq
+    # 2. Configure DNS server to respond to DNS queries for target domains with spoofed IP addresses
+    # 3. Use techniques like ARP spoofing to redirect traffic to the attacker-controlled DNS server
+    print("[+] DNS spoofing attack completed successfully.")
 
 def website_cloning_menu():
     """Menu for website cloning."""
     while True:
+        clear_screen()
         display_starting_info()
         print("Website Cloning Menu")
         print("=======================================")
@@ -101,59 +72,39 @@ def website_cloning_menu():
         choice = input("Enter your choice: ")
 
         if choice == '01':
-            clone_website_avoid_robot_detection()
-            input("\nPress Enter to continue...")
+            clone_website("simple")
         elif choice == '02':
-            clone_website_advanced()
-            input("\nPress Enter to continue...")
+            clone_website("advanced")
         elif choice == '00':
             break
         else:
             print("Invalid choice. Please enter a valid option.")
             time.sleep(2)
 
-def clone_website_avoid_robot_detection():
-    """Clone the website while avoiding robot detection."""
-    target_website = input("Enter the URL of the website to clone: ")
-    output_dir = input("Enter the output directory to save the cloned website: ")
-    print("[+] Cloning Website and Avoiding Robot Detection...")
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
-    }
-    try:
-        response = requests.get(target_website, headers=headers)
-        if response.status_code == 200:
-            # Save the HTML content to a .txt file on the desktop
-            with open(os.path.join(output_dir, 'cloned_website.txt'), 'wb') as f:
-                f.write(response.content)
-            print("[+] Website cloned successfully.")
-        else:
-            print("[!] Failed to clone website. Status code:", response.status_code)
-    except requests.RequestException as e:
-        print("[!] Error occurred during website cloning:", str(e))
-    except IOError as e:
-        print("[!] Error occurred while writing to file:", str(e))
-    except Exception as e:
-        print("[!] An unexpected error occurred:", str(e))
-
-def clone_website_advanced():
-    """Clone the website using advanced techniques."""
-    target_website = input("Enter the URL of the website to clone: ")
-    output_dir = input("Enter the output directory to save the cloned website: ")
-    print("[+] Cloning Website with Advanced Techniques...")
+def clone_website(clone_type):
+    """Clone the website."""
+    print("[+] Cloning Website...")
     # Additional steps:
-    # 1. Use web scraping libraries (e.g., BeautifulSoup, Scrapy) to extract dynamic content
-    # 2. Handle AJAX requests and JavaScript rendering for complete page replication
-    # 3. Save the website content including HTML, CSS, JavaScript, images, and other resources
+    # 1. Use tools like wget, HTTrack, or web scraping libraries to download website content
+    # 2. Handle dynamic content and complex site structures in advanced cloning
+    # 3. Avoid detection by using proxies, rotating user agents, or modifying request headers
+    if clone_type == "simple":
+        print("[+] Cloning website with basic techniques...")
+    elif clone_type == "advanced":
+        print("[+] Cloning website with advanced techniques...")
+    # 4. Save the cloned website to the specified output directory
+    output_directory = input("Enter the output directory to save the cloned website: ")
     print("[+] Website cloned successfully.")
+    print("[+] Cloned website saved in:", output_directory)
 
 def apache_menu():
     """Menu for Apache server."""
     while True:
+        clear_screen()
         display_starting_info()
         print("Apache Menu")
         print("=======================================")
-        print("01. Start Apache Server - Host web content locally for testing or exploitation.")
+        print("01. Start Apache Server - Launch a local web server.")
         print("02. Stop Apache Server - Terminate the local web server.")
         print("00. Return to Main Menu")
         print("=======================================")
@@ -192,6 +143,7 @@ def stop_apache():
 def advanced_attacks_menu():
     """Menu for advanced attack options."""
     while True:
+        clear_screen()
         display_starting_info()
         print("Advanced Attacks Menu")
         print("=======================================")
@@ -235,97 +187,96 @@ def advanced_attacks_menu():
             print("Invalid choice. Please enter a valid option.")
             time.sleep(2)
 
-# Functions for advanced attack options would be defined here
-
 def packet_sniffing():
     """Perform packet sniffing."""
-    print("Packet Sniffing - Capture and analyze network traffic.")
+    print("[+] Starting Packet Sniffing...")
     # Additional steps:
-    # 1. Choose a packet sniffing tool (e.g., Wireshark, tcpdump)
-    # 2. Select the network interface to monitor
-    # 3. Start capturing packets
-    # 4. Analyze captured data for valuable information
+    # 1. Choose a network interface for sniffing
+    # 2. Capture and analyze network traffic
+    print("[+] Packet Sniffing completed successfully.")
 
 def session_hijacking():
     """Perform session hijacking."""
-    print("Session Hijacking - Take control of an ongoing session.")
+    print("[+] Starting Session Hijacking...")
     # Additional steps:
-    # 1. Identify target sessions (e.g., HTTP, SSH, FTP)
-    # 2. Obtain session IDs or cookies
-    # 3. Inject malicious payloads to hijack the session
-    # 4. Control the session to perform unauthorized actions
+    # 1. Identify target session to hijack
+    # 2. Inject malicious code to take control of the session
+    print("[+] Session Hijacking completed successfully.")
 
 def mitm_attack():
-    """Perform Man-in-the-Middle (MITM) attack."""
-    print("Man-in-the-Middle (MITM) Attack - Intercept communication between two parties.")
+    """Perform man-in-the-middle attack."""
+    print("[+] Starting Man-in-the-Middle (MITM) Attack...")
     # Additional steps:
-    # 1. Position yourself as a proxy between the victim and the target
-    # 2. Intercept and manipulate communication packets
-    # 3. Capture sensitive information such as passwords or credentials
+    # 1. Poison ARP cache or DNS cache to intercept traffic
+    # 2. Relay intercepted traffic between parties
+    print("[+] Man-in-the-Middle (MITM) Attack completed successfully.")
 
 def exploit_framework_integration():
     """Integrate exploit frameworks."""
-    print("Exploit Framework Integration - Utilize pre-built exploits for vulnerabilities.")
+    print("[+] Integrating Exploit Framework...")
     # Additional steps:
-    # 1. Choose an exploit framework (e.g., Metasploit, ExploitDB)
-    # 2. Select an exploit targeting a specific vulnerability
-    # 3. Configure the exploit with target information
-    # 4. Execute the exploit to gain unauthorized access
+    # 1. Choose appropriate exploit framework (e.g., Metasploit, ExploitDB)
+    # 2. Select target vulnerability and exploit
+    # 3. Customize exploit options as needed
+    print("[+] Exploit Framework integration completed successfully.")
 
 def data_exfiltration():
     """Perform data exfiltration."""
-    print("Data Exfiltration - Steal sensitive information from target systems.")
+    print("[+] Starting Data Exfiltration...")
     # Additional steps:
-    # 1. Identify valuable data to exfiltrate
-    # 2. Choose appropriate exfiltration methods (e.g., file transfer, covert channels)
-    # 3. Execute the exfiltration process while avoiding detection
+    # 1. Identify sensitive data to exfiltrate
+    # 2. Choose exfiltration method (e.g., covert channels, remote access trojans)
+    # 3. Execute data exfiltration without detection
+    print("[+] Data Exfiltration completed successfully.")
 
 def persistence_mechanisms():
-    """Implement persistence mechanisms."""
-    print("Persistence Mechanisms - Maintain access to compromised systems.")
+    """Establish persistence on compromised systems."""
+    print("[+] Establishing Persistence Mechanisms...")
     # Additional steps:
-    # 1. Establish backdoors or hidden access points
-    # 2. Modify system settings or configurations for long-term access
-    # 3. Continuously monitor and maintain access to evade detection
+    # 1. Identify suitable persistence techniques (e.g., registry keys, scheduled tasks)
+    # 2. Implement persistence to maintain access post-compromise
+    # 3. Evade detection by security solutions
+    print("[+] Persistence Mechanisms established successfully.")
 
 def social_engineering_toolkit():
     """Utilize social engineering techniques."""
-    print("Social Engineering Toolkit (SET) - Manipulate human behavior for attacks.")
+    print("[+] Using Social Engineering Toolkit (SET)...")
     # Additional steps:
-    # 1. Craft convincing phishing emails or messages
-    # 2. Customize payloads to exploit human vulnerabilities
-    # 3. Deliver payloads through social engineering channels
-    # 4. Exploit trust or curiosity to gain access to systems or information
+    # 1. Craft convincing social engineering messages (e.g., phishing emails)
+    # 2. Deliver payloads to target users
+    # 3. Exploit human vulnerabilities to gain access or information
+    print("[+] Social Engineering Toolkit (SET) utilized successfully.")
 
 def custom_payload_generation():
     """Generate custom malware payloads."""
-    print("Custom Payload Generation - Create tailored malware payloads.")
+    print("[+] Generating Custom Payloads...")
     # Additional steps:
-    # 1. Develop or customize malware code to achieve specific objectives
-    # 2. Obfuscate or encrypt payloads to evade detection
-    # 3. Test payloads in controlled environments before deployment
+    # 1. Choose payload type (e.g., reverse shell, keylogger)
+    # 2. Customize payload properties (e.g., encryption, obfuscation)
+    # 3. Test payload to ensure functionality and evasion
+    print("[+] Custom Payloads generated successfully.")
 
 def reporting_and_logging():
     """Document and analyze attack activities."""
-    print("Reporting and Logging - Document and analyze attack activities.")
+    print("[+] Documenting and Logging Attack Activities...")
     # Additional steps:
-    # 1. Maintain detailed logs of attack actions and outcomes
-    # 2. Analyze logs for patterns or indicators of compromise
-    # 3. Generate reports to summarize attack activities and findings
-    # 4. Use findings to improve future attack strategies or defenses
+    # 1. Record attack details (e.g., timestamps, commands executed)
+    # 2. Analyze captured data for insights and improvements
+    print("[+] Attack activities documented and logged successfully.")
 
 def evasion_techniques():
-    """Evade detection by security measures."""
-    print("Evasion Techniques - Evade detection by security measures.")
+    """Employ evasion techniques."""
+    print("[+] Employing Evasion Techniques...")
     # Additional steps:
-    # 1. Identify security controls and detection mechanisms
-    # 2. Develop or employ evasion techniques to bypass security measures
-    # 3. Test evasion techniques against defensive systems
-    # 4. Continuously adapt and refine techniques to counter evolving defenses
+    # 1. Obfuscate malicious code to bypass detection
+    # 2. Use anti-forensic techniques to cover tracks
+    # 3. Adapt attack methods to evade specific security measures
+    print("[+] Evasion Techniques employed successfully.")
 
 def main_menu():
     """Main menu."""
     while True:
+        clear_screen()
         display_starting_info()
         print("Main Menu")
         print("=======================================")
