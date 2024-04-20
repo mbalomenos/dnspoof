@@ -1,91 +1,179 @@
 import os
-import sys
+import shutil
 import subprocess
-import socket
+import requests
+import re
+import time
 
-def show_own_ip():
-    own_ip = socket.gethostbyname(socket.gethostname())
-    print(f"Your IP address is: {own_ip}")
+def clear_screen():
+    """Clear the terminal screen."""
+    if os.name == 'posix':
+        _ = subprocess.call('clear', shell=True)
+    else:
+        _ = subprocess.call('cls', shell=True)
 
-def clone_website():
-    url = input("Enter the URL of the website you want to clone: ")
-    try:
-        subprocess.run(["wget", "--mirror", "--convert-links", "--adjust-extension", "--page-requisites", url])
-        print("Website cloned successfully!")
-    except Exception as e:
-        print(f"Error while cloning website: {e}")
-
-def modify_host_file(ip_address, url):
-    try:
-        with open('/etc/hosts', 'a') as hostfile:
-            hostfile.write(f"{ip_address} {url}\n")
-        print("Host file modified successfully!")
-    except Exception as e:
-        print(f"Error while modifying host file: {e}")
-
-def start_dns_spoofing(interface=None, target_ip=None, gateway_ip=None, dns_server=None):
-    try:
-        command = ["dnsmasq", "-C", "/etc/dnsmasq.conf"]
-        if interface:
-            command.extend(["-i", interface])
-        if target_ip and gateway_ip:
-            command.extend(["--interface=", interface, "--address=", f"/{target_ip}/{gateway_ip}"])
-        if dns_server:
-            command.extend(["--server=", dns_server])
-        subprocess.run(command)
-        print("DNS spoofing started successfully!")
-    except Exception as e:
-        print(f"Error while starting DNS spoofing: {e}")
-
-def main():
-    print("DNS Spoofing Steps:")
-    print("1. Show your own IP address")
-    print("2. Clone a website")
-    print("3. Modify the host file")
-    print("4. Start DNS spoofing")
-
+def dns_spoofing_menu(target_website, local_ip):
+    """Menu for DNS spoofing attack."""
     while True:
-        try:
-            option = int(input("Enter the step number to proceed (1-4): "))
-            if option < 1 or option > 4:
-                raise ValueError
+        clear_screen()
+        print("DNS Spoofing Menu")
+        print("1. Perform DNS Spoofing Attack")
+        print("00. Return to Main Menu")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            perform_dns_spoofing(target_website, local_ip)
+            input("\nPress Enter to continue...")
+        elif choice == '00':
             break
-        except ValueError:
-            print("Invalid input. Please enter a number between 1 and 4.")
+        else:
+            print("Invalid choice. Please enter a valid option.")
+            time.sleep(2)
 
-    if option == 1:
-        show_own_ip()
-    elif option == 2:
-        clone_website()
-    elif option == 3:
-        ip_address = input("Enter the IP address to redirect to: ")
-        url = input("Enter the URL to redirect: ")
-        modify_host_file(ip_address, url)
-    elif option == 4:
-        print("Options for starting DNS spoofing:")
-        print("1. Start DNS spoofing on default interface")
-        print("2. Start DNS spoofing on specific interface with target and gateway IPs")
-        print("3. Start DNS spoofing with custom DNS server")
+def perform_dns_spoofing(target_website, local_ip):
+    """Perform DNS spoofing attack."""
+    print("[+] Performing DNS Spoofing Attack...")
+    # Implement DNS spoofing logic using tools like scapy or dnspython
+    # Respond to DNS requests for the target website with the provided local IP
+    # Display spoofing activity and responses
 
-        while True:
-            try:
-                spoof_option = int(input("Enter the option number to proceed (1-3): "))
-                if spoof_option < 1 or spoof_option > 3:
-                    raise ValueError
-                break
-            except ValueError:
-                print("Invalid input. Please enter a number between 1 and 3.")
+def website_cloning_menu(target_website, output_dir):
+    """Menu for website cloning."""
+    while True:
+        clear_screen()
+        print("Website Cloning Menu")
+        print("1. Clone Website and Avoid Robot Detection")
+        print("00. Return to Main Menu")
+        choice = input("Enter your choice: ")
 
-        if spoof_option == 1:
-            start_dns_spoofing()
-        elif spoof_option == 2:
-            interface = input("Enter the interface name: ")
-            target_ip = input("Enter the target IP address: ")
-            gateway_ip = input("Enter the gateway IP address: ")
-            start_dns_spoofing(interface, target_ip, gateway_ip)
-        elif spoof_option == 3:
-            dns_server = input("Enter the custom DNS server IP address: ")
-            start_dns_spoofing(dns_server=dns_server)
+        if choice == '1':
+            clone_website(target_website, output_dir)
+            input("\nPress Enter to continue...")
+        elif choice == '00':
+            break
+        else:
+            print("Invalid choice. Please enter a valid option.")
+            time.sleep(2)
+
+def clone_website(url, output_dir):
+    """Clone the website while avoiding robot detection."""
+    print("[+] Cloning Website and Avoiding Robot Detection...")
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            # Save the HTML content
+            with open(os.path.join(output_dir, 'index.html'), 'wb') as f:
+                f.write(response.content)
+            print("[+] Website cloned successfully.")
+        else:
+            print("[!] Failed to clone website. Status code:", response.status_code)
+    except Exception as e:
+        print("[!] An error occurred while cloning the website:", str(e))
+
+def apache_menu():
+    """Menu for Apache server."""
+    while True:
+        clear_screen()
+        print("Apache Menu")
+        print("1. Start Apache Server")
+        print("00. Return to Main Menu")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            start_apache()
+            input("\nPress Enter to continue...")
+        elif choice == '00':
+            break
+        else:
+            print("Invalid choice. Please enter a valid option.")
+            time.sleep(2)
+
+def start_apache():
+    """Start the Apache server."""
+    print("[+] Starting Apache Server...")
+    # Start the Apache server
+    # Check if Apache is already running, start it if not
+    # Handle any errors that may occur during Apache startup
+
+def main_menu(target_website, local_ip, output_dir):
+    """Main menu."""
+    while True:
+        clear_screen()
+        print("Main Menu")
+        print("1. DNS Spoofing")
+        print("2. Website Cloning")
+        print("3. Apache Server")
+        print("4. Advanced Attacks")
+        print("5. Exit")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            dns_spoofing_menu(target_website, local_ip)
+        elif choice == '2':
+            website_cloning_menu(target_website, output_dir)
+        elif choice == '3':
+            apache_menu()
+        elif choice == '4':
+            advanced_attacks_menu()
+        elif choice == '5':
+            print("Exiting...")
+            break
+        else:
+            print("Invalid choice. Please enter a valid option.")
+            time.sleep(2)
+
+def advanced_attacks_menu():
+    """Menu for advanced attack options."""
+    while True:
+        clear_screen()
+        print("Advanced Attacks Menu")
+        print("1. Packet Sniffing")
+        print("2. Session Hijacking")
+        print("3. Man-in-the-Middle (MITM) Attack")
+        print("4. Exploit Framework Integration")
+        print("5. Data Exfiltration")
+        print("6. Persistence Mechanisms")
+        print("7. Social Engineering Toolkit (SET)")
+        print("8. Custom Payload Generation")
+        print("9. Reporting and Logging")
+        print("10. Evasion Techniques")
+        print("00. Return to Main Menu")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            packet_sniffing()
+        elif choice == '2':
+            session_hijacking()
+        elif choice == '3':
+            mitm_attack()
+        elif choice == '4':
+            exploit_framework_integration()
+        elif choice == '5':
+            data_exfiltration()
+        elif choice == '6':
+            persistence_mechanisms()
+        elif choice == '7':
+            social_engineering_toolkit()
+        elif choice == '8':
+            custom_payload_generation()
+        elif choice == '9':
+            reporting_and_logging()
+        elif choice == '10':
+            evasion_techniques()
+        elif choice == '00':
+            break
+        else:
+            print("Invalid choice. Please enter a valid option.")
+            time.sleep(2)
+
+# Functions for advanced attack options would be defined here
 
 if __name__ == "__main__":
-    main()
+    target_website = "example.com"  # Set the target website
+    local_ip = "192.168.1.100"  # Set the local IP address
+    output_dir = "cloned_website"  # Output directory for cloned website
+
+    main_menu(target_website, local_ip, output_dir)
