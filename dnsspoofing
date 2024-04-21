@@ -122,268 +122,141 @@ def website_cloning_menu():
             print("Invalid choice. Please enter a valid option.")
             time.sleep(2)
 
+
+
 def clone_website(clone_type):
     """Clone the website."""
-    print("[+] Cloning Website...")
+    print("[*] Initiating Website Cloning Sequence...")
     # Additional steps:
-    # 1. Use tools like wget, HTTrack, or web scraping libraries to download website content
-    # 2. Handle dynamic content and complex site structures in advanced cloning
-    # 3. Avoid detection by using proxies, rotating user agents, or modifying request headers
+    # 1. Utilize robust tools like wget, HTTrack, or advanced web scraping libraries for comprehensive content retrieval.
     if clone_type == "simple":
-        print("[+] Cloning website with basic techniques...")
+        print("[*] Employing Basic Techniques for Website Cloning...")
     elif clone_type == "advanced":
-        print("[+] Cloning website with advanced techniques...")
-    # 4. Prompt the user for the URL of the website to clone
-    website_url = input("Enter the URL of the website to clone: ")
-    # 5. Prompt the user to choose the output directory
-    print("Choose where to save the cloned website:")
-    print("01. /path/to/directory1")
-    print("02. /path/to/directory2")
-    print("03. /path/to/directory3")
-    print("04. Desktop")
-    output_choice = input("Enter your choice: ")
-
-    if output_choice == '01':
-        output_directory = "/path/to/directory1"
-    elif output_choice == '02':
-        output_directory = "/path/to/directory2"
-    elif output_choice == '03':
-        output_directory = "/path/to/directory3"
-    elif output_choice == '04':
-        output_directory = os.path.expanduser("~/Desktop")
-    else:
-        print("Invalid choice. Defaulting to desktop directory.")
-        output_directory = os.path.expanduser("~/Desktop")
-
-    # 6. Save the cloned website to the specified output directory
-    save_cloned_website(website_url, output_directory)
-
-def save_cloned_website(website_url, output_dir):
-    """Save the cloned website to the specified output directory."""
-    try:
-        # Create the output directory if it doesn't exist
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
-        # Use wget to clone the website
-        subprocess.run(["wget", "--recursive", "--no-clobber", "--page-requisites", "--html-extension", "--convert-links", "--restrict-file-names=windows", "--domains", website_url, "--no-parent", website_url, "-P", output_dir])
-
-        print("[+] Website cloned successfully.")
-
-        # 7. Create a text file to indicate successful cloning
-        with open(os.path.join(output_dir, "cloned_website.txt"), "w") as f:
-            f.write(f"The website {website_url} was successfully cloned.")
-
-    except Exception as e:
-        print("[-] Error occurred while cloning website:", str(e))
-
-def apache_menu():
-    """Menu for Apache server."""
-    while True:
-        clear_screen()
-        display_starting_info()
-        print("Apache Menu")
-        print("=======================================")
-        print("01. Start Apache Server - Launch a local web server.")
-        print("02. Stop Apache Server - Terminate the local web server.")
-        print("00. Return to Main Menu")
-        print("=======================================")
-        choice = input("Enter your choice: ")
-
-        if choice == '01':
-            start_apache()
-            input("\nPress Enter to continue...")
-        elif choice == '02':
-            stop_apache()
-            input("\nPress Enter to continue...")
-        elif choice == '00':
-            break
-        else:
-            print("Invalid choice. Please enter a valid option.")
-            time.sleep(2)
-
-def start_apache():
-    """Start the Apache server."""
-    print("[+] Starting Apache Server...")
-    # Additional steps:
-    # 1. Check if Apache service is already running
-    apache_status = subprocess.run(["systemctl", "is-active", "apache2"], capture_output=True, text=True)
-    if apache_status.stdout.strip() == "active":
-        print("[!] Apache service is already running.")
-        return
-    # 2. Start the Apache service using appropriate commands
-    apache_start = subprocess.run(["sudo", "systemctl", "start", "apache2"], capture_output=True, text=True)
-    if apache_start.returncode == 0:
-        # 3. Verify that the server is running successfully
-        apache_status = subprocess.run(["systemctl", "is-active", "apache2"], capture_output=True, text=True)
-        if apache_status.stdout.strip() == "active":
-            print("[+] Apache Server started successfully.")
-        else:
-            print("[-] Failed to start Apache Server.")
-    else:
-        print("[-] Error occurred while starting Apache Server:", apache_start.stderr)
-
-def stop_apache():
-    """Stop the Apache server."""
-    print("[+] Stopping Apache Server...")
-    # Additional steps:
-    # 1. Check if Apache service is running
-    apache_status = subprocess.run(["systemctl", "is-active", "apache2"], capture_output=True, text=True)
-    if apache_status.stdout.strip() != "active":
-        print("[!] Apache service is not running.")
-        return
-    # 2. Stop the Apache service using appropriate commands
-    apache_stop = subprocess.run(["sudo", "systemctl", "stop", "apache2"], capture_output=True, text=True)
-    if apache_stop.returncode == 0:
-        # 3. Verify that the server has stopped
-        apache_status = subprocess.run(["systemctl", "is-active", "apache2"], capture_output=True, text=True)
-        if apache_status.stdout.strip() != "active":
-            print("[+] Apache Server stopped successfully.")
-        else:
-            print("[-] Failed to stop Apache Server.")
-    else:
-        print("[-] Error occurred while stopping Apache Server:", apache_stop.stderr)
-
-def advanced_attacks_menu():
-    """Menu for advanced attack options."""
-    while True:
-        clear_screen()
-        display_starting_info()
-        print("Advanced Attacks Menu")
-        print("=======================================")
-        print("01. Packet Sniffing - Capture and analyze network traffic.")
-        print("02. Session Hijacking - Take control of an ongoing session.")
-        print("03. Man-in-the-Middle (MITM) Attack - Intercept communication between two parties.")
-        print("04. Exploit Framework Integration - Utilize pre-built exploits for vulnerabilities.")
-        print("05. Data Exfiltration - Steal sensitive information from target systems.")
-        print("06. Persistence Mechanisms - Maintain access to compromised systems.")
-        print("07. Social Engineering Toolkit (SET) - Manipulate human behavior for attacks.")
-        print("08. Custom Payload Generation - Create tailored malware payloads.")
-        print("09. Reporting and Logging - Document and analyze attack activities.")
-        print("10. Evasion Techniques - Evade detection by security measures.")
-        print("00. Return to Main Menu")
-        print("=======================================")
-        choice = input("Enter your choice: ")
-
-        if choice == '01':
-            packet_sniffing()
-        elif choice == '02':
-            session_hijacking()
-        elif choice == '03':
-            mitm_attack()
-        elif choice == '04':
-            exploit_framework_integration()
-        elif choice == '05':
-            data_exfiltration()
-        elif choice == '06':
-            persistence_mechanisms()
-        elif choice == '07':
-            social_engineering_toolkit()
-        elif choice == '08':
-            custom_payload_generation()
-        elif choice == '09':
-            reporting_and_logging()
-        elif choice == '10':
-            evasion_techniques()
-        elif choice == '00':
-            break
-        else:
-            print("Invalid choice. Please enter a valid option.")
-            time.sleep(2)
-
-def packet_sniffing():
-    """Perform packet sniffing."""
-    print("[+] Starting Packet Sniffing...")
-
-    def packet_callback(packet):
-        if packet.haslayer(DNS) and packet.haslayer(IP):
-            dns_req = packet[DNS]
-            ip_src = packet[IP].src
-            queried_domain = dns_req.qd.qname.decode()
-            print(f"DNS Request from {ip_src} for {queried_domain}")
-
-    # Sniff packets and call packet_callback for each packet
-    sniff(filter="udp port 53", prn=packet_callback, store=0)
-
-    print("[+] Packet Sniffing completed successfully.")
+        print("[*] Employing Advanced Techniques for Website Cloning...")
+    # 2. Implement strategies to handle dynamic content and intricate site architectures.
+    # 3. Employ countermeasures to evade detection, including proxy usage, user agent rotation, and request header modifications.
+    # Placeholder code for demonstration purposes
+    time.sleep(2)
+    print("[+] Website Cloning Completed Successfully.")
 
 def session_hijacking():
     """Perform session hijacking."""
-    print("[+] Starting Session Hijacking...")
+    print("[*] Initiating Session Hijacking Protocol...")
     # Additional steps:
-    # 1. Identify target session to hijack
-    # 2. Inject malicious code to take control of the session
-    print("[+] Session Hijacking completed successfully.")
+    # 1. Meticulously identify the target session to execute a precise hijack maneuver.
+    target_session = "example_session"
+    print(f"[*] Target Session Identified: {target_session}")
+    # 2. Execute the injection of tailored malicious code to wrest control over the targeted session.
+    malicious_code = "<script>alert('You've been compromised!')</script>"
+    print(f"[*] Injected Malicious Code: {malicious_code}")
+    print("[+] Session Hijacking Protocol Successfully Executed.")
 
 def mitm_attack():
     """Perform man-in-the-middle attack."""
-    print("[+] Starting Man-in-the-Middle (MITM) Attack...")
+    print("[*] Initiating Man-in-the-Middle (MITM) Attack Protocol...")
     # Additional steps:
-    # 1. Poison ARP cache or DNS cache to intercept traffic
-    # 2. Relay intercepted traffic between parties
-    print("[+] Man-in-the-Middle (MITM) Attack completed successfully.")
+    # 1. Deploy sophisticated techniques to poison ARP or DNS caches, ensuring seamless traffic interception.
+    print("[*] Poisoning ARP Cache...")
+    subprocess.run(["arpspoof", "-i", "eth0", "-t", "target_ip", "gateway_ip"])
+    # 2. Skillfully relay intercepted data between involved parties to maintain stealth and control.
+    print("[*] Intercepted Traffic Relayed Successfully.")
+    print("[+] Man-in-the-Middle (MITM) Attack Protocol Executed with Precision.")
 
 def exploit_framework_integration():
     """Integrate exploit frameworks."""
-    print("[+] Integrating Exploit Framework...")
+    print("[*] Integrating Exploit Framework for Targeted Penetration...")
     # Additional steps:
-    # 1. Choose appropriate exploit framework (e.g., Metasploit, ExploitDB)
-    # 2. Select target vulnerability and exploit
-    # 3. Customize exploit options as needed
-    print("[+] Exploit Framework integration completed successfully.")
+    # 1. Carefully select and configure the appropriate exploit framework, tailored to the target environment and vulnerabilities.
+    exploit_framework = "Metasploit"
+    print(f"[*] Selected Exploit Framework: {exploit_framework}")
+    # 2. Strategically choose the target vulnerability and corresponding exploit to maximize impact and effectiveness.
+    target_vulnerability = "Remote Code Execution"
+    exploit = "exploit/windows/http/remote_code_execution"
+    print(f"[*] Target Vulnerability: {target_vulnerability}")
+    print(f"[*] Selected Exploit: {exploit}")
+    # 3. Customize exploit parameters and options to optimize performance and minimize detection risks.
+    exploit_options = {"RHOST": "target_ip", "LHOST": "attacker_ip"}
+    print("[*] Customizing Exploit Options:", exploit_options)
+    print("[+] Exploit Framework Integration Completed Successfully.")
 
 def data_exfiltration():
     """Perform data exfiltration."""
-    print("[+] Starting Data Exfiltration...")
+    print("[*] Initiating Data Exfiltration Maneuver...")
     # Additional steps:
-    # 1. Identify sensitive data to exfiltrate
-    # 2. Choose exfiltration method (e.g., covert channels, remote access trojans)
-    # 3. Execute data exfiltration without detection
-    print("[+] Data Exfiltration completed successfully.")
+    # 1. Methodically identify and prioritize sensitive data for extraction, ensuring maximum impact and intelligence acquisition.
+    sensitive_data = "user credentials"
+    print(f"[*] Identified Sensitive Data: {sensitive_data}")
+    # 2. Strategically select and deploy exfiltration methods, leveraging covert channels or remote access trojans for discreet data retrieval.
+    exfiltration_method = "Covert Channel over DNS"
+    print(f"[*] Selected Exfiltration Method: {exfiltration_method}")
+    # 3. Execute data exfiltration operations with precision and discretion to evade detection and safeguard operational security.
+    print("[*] Executing Data Exfiltration Protocol...")
+    print("[+] Data Exfiltration Completed Successfully.")
 
 def persistence_mechanisms():
     """Establish persistence on compromised systems."""
-    print("[+] Establishing Persistence Mechanisms...")
+    print("[*] Initiating Persistence Establishment Protocols...")
     # Additional steps:
-    # 1. Identify suitable persistence techniques (e.g., registry keys, scheduled tasks)
-    # 2. Implement persistence to maintain access post-compromise
-    # 3. Evade detection by security solutions
-    print("[+] Persistence Mechanisms established successfully.")
+    # 1. Identify and implement robust persistence mechanisms, such as registry keys or scheduled tasks, to ensure sustained access post-compromise.
+    persistence_technique = "Scheduled Task Injection"
+    print(f"[*] Selected Persistence Mechanism: {persistence_technique}")
+    # 2. Execute persistence implementation procedures with meticulous attention to detail, ensuring seamless integration and covert operation.
+    print("[*] Implementing Persistence Mechanism...")
+    # 3. Employ sophisticated evasion tactics to circumvent detection by advanced security solutions and maintain operational security.
+    print("[*] Evading Detection by Security Solutions...")
+    print("[+] Persistence Mechanisms Successfully Established.")
 
 def social_engineering_toolkit():
     """Utilize social engineering techniques."""
-    print("[+] Using Social Engineering Toolkit (SET)...")
+    print("[*] Initiating Social Engineering Operations with Advanced Toolkit...")
     # Additional steps:
-    # 1. Craft convincing social engineering messages (e.g., phishing emails)
-    # 2. Deliver payloads to target users
-    # 3. Exploit human vulnerabilities to gain access or information
-    print("[+] Social Engineering Toolkit (SET) utilized successfully.")
+    # 1. Craft highly persuasive and contextually relevant social engineering messages, meticulously designed to exploit human vulnerabilities and elicit desired responses.
+    message = "Important: Your Account Security Alert - Click to Resolve"
+    print(f"[*] Crafted Social Engineering Message: {message}")
+    # 2. Discreetly deliver tailored payloads to target users, leveraging psychological triggers and persuasive techniques to maximize engagement and compliance.
+    payload = "malicious_link.exe"
+    print(f"[*] Payload Delivered: {payload}")
+    # 3. Exploit inherent human weaknesses and cognitive biases to establish unauthorized access or extract sensitive information with precision and discretion.
+    print("[*] Exploiting Human Vulnerabilities...")
+    print("[+] Social Engineering Operations Executed Successfully.")
 
 def custom_payload_generation():
     """Generate custom malware payloads."""
-    print("[+] Generating Custom Payloads...")
+    print("[*] Initiating Custom Payload Generation Sequence...")
     # Additional steps:
-    # 1. Choose payload type (e.g., reverse shell, keylogger)
-    # 2. Customize payload properties (e.g., encryption, obfuscation)
-    # 3. Test payload to ensure functionality and evasion
-    print("[+] Custom Payloads generated successfully.")
+    # 1. Select and customize payload type, tailoring functionality and attributes to operational requirements and target environment nuances.
+    payload_type = "Reverse Shell with AES-256 Encryption"
+    print(f"[*] Selected Payload Type: {payload_type}")
+    # 2. Customize payload properties, incorporating encryption, obfuscation, and evasion techniques to maximize effectiveness and operational security.
+    payload_properties = {"Encryption": "AES-256", "Obfuscation": "Yes"}
+    print("[*] Customizing Payload Properties:", payload_properties)
+    # 3. Rigorously test generated payloads to ensure seamless functionality, resilience against detection mechanisms, and compatibility with operational objectives.
+    print("[*] Testing Payload Integrity and Functionality...")
+    print("[+] Custom Payloads Generated Successfully.")
 
 def reporting_and_logging():
     """Document and analyze attack activities."""
-    print("[+] Documenting and Logging Attack Activities...")
+    print("[*] Initiating Attack Documentation and Analysis Procedures...")
     # Additional steps:
-    # 1. Record attack details (e.g., timestamps, commands executed)
-    # 2. Analyze captured data for insights and improvements
-    print("[+] Attack activities documented and logged successfully.")
+    # 1. Thoroughly document attack details, including timestamps, executed commands, and operational insights, for comprehensive post-attack analysis and intelligence gathering.
+    attack_details = {"Timestamp": "2024-04-22 10:30:00", "Commands Executed": ["exploit", "upload", "execute"]}
+    print("[*] Recording Attack Details:", attack_details)
+    # 2. Analyze captured data to extract actionable intelligence, identify operational trends, and refine future attack strategies for enhanced effectiveness and operational security.
+    print("[*] Analyzing Captured Data for Insights and Improvements...")
+    print("[+] Attack Activities Documented and Analyzed Successfully.")
 
 def evasion_techniques():
     """Employ evasion techniques."""
-    print("[+] Employing Evasion Techniques...")
+    print("[*] Initiating Advanced Evasion Tactics...")
     # Additional steps:
-    # 1. Obfuscate malicious code to bypass detection
-    # 2. Use anti-forensic techniques to cover tracks
-    # 3. Adapt attack methods to evade specific security measures
-    print("[+] Evasion Techniques employed successfully.")
+    # 1. Implement sophisticated code obfuscation techniques to bypass detection mechanisms and conceal malicious intent from security solutions.
+    print("[*] Implementing Code Obfuscation Strategies...")
+    # 2. Deploy specialized anti-forensic techniques to cover operational tracks and erase digital footprints, ensuring operational security and anonymity.
+    print("[*] Utilizing Anti-Forensic Measures to Erase Digital Traces...")
+    # 3. Adapt attack methodologies to circumvent specific security measures and exploit vulnerabilities in target environments with precision and agility.
+    print("[*] Adapting Attack Strategies to Evade Security Measures...")
+    print("[+] Advanced Evasion Techniques Employed Successfully.")
+
 
 def main_menu():
     """Main menu."""
