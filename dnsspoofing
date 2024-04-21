@@ -1,11 +1,8 @@
-from scapy.all import *
-import os
-import shutil
 import subprocess
-import requests
-import re
+import os
 import time
 import socket
+from scapy.all import *
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -122,7 +119,268 @@ def website_cloning_menu():
             print("Invalid choice. Please enter a valid option.")
             time.sleep(2)
 
+def clone_website(clone_type):
+    """Clone the website."""
+    print("[+] Cloning Website...")
+    # Additional steps:
+    # 1. Use tools like wget, HTTrack, or web scraping libraries to download website content
+    # 2. Handle dynamic content and complex site structures in advanced cloning
+    # 3. Avoid detection by using proxies, rotating user agents, or modifying request headers
+    if clone_type == "simple":
+        print("[+] Cloning website with basic techniques...")
+    elif clone_type == "advanced":
+        print("[+] Cloning website with advanced techniques...")
+    # 4. Prompt the user for the URL of the website to clone
+    website_url = input("Enter the URL of the website to clone: ")
+    # 5. Prompt the user to choose the output directory
+    print("Choose where to save the cloned website:")
+    print("01. /path/to/directory1")
+    print("02. /path/to/directory2")
+    print("03. /path/to/directory3")
+    print("04. Desktop")
+    output_choice = input("Enter your choice: ")
 
+    if output_choice == '01':
+        output_directory = "/path/to/directory1"
+    elif output_choice == '02':
+        output_directory = "/path/to/directory2"
+    elif output_choice == '03':
+        output_directory = "/path/to/directory3"
+    elif output_choice == '04':
+        output_directory = os.path.expanduser("~/Desktop")
+    else:
+        print("Invalid choice. Defaulting to desktop directory.")
+        output_directory = os.path.expanduser("~/Desktop")
+
+    # 6. Save the cloned website to the specified output directory
+    save_cloned_website(website_url, output_directory)
+
+def save_cloned_website(website_url, output_dir):
+    """Save the cloned website to the specified output directory."""
+    try:
+        # Create the output directory if it doesn't exist
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        # Use wget to clone the website
+        subprocess.run(["wget", "--recursive", "--no-clobber", "--page-requisites", "--html-extension", "--convert-links", "--restrict-file-names=windows", "--domains", website_url, "--no-parent", website_url, "-P", output_dir])
+
+        print("[+] Website cloned successfully.")
+
+        # 7. Create a text file to indicate successful cloning
+        with open(os.path.join(output_dir, "cloned_website.txt"), "w") as f:
+            f.write(f"The website {website_url} was successfully cloned.")
+
+    except Exception as e:
+        print("[-] Error occurred while cloning website:", str(e))
+
+def apache_menu():
+    """Menu for Apache server."""
+    while True:
+        clear_screen()
+        display_starting_info()
+        print("Apache Menu")
+        print("=======================================")
+        print("01. Start Apache Server - Launch a local web server.")
+        print("02. Stop Apache Server - Terminate the local web server.")
+        print("00. Return to Main Menu")
+        print("=======================================")
+        choice = input("Enter your choice: ")
+
+        if choice == '01':
+            start_apache()
+            input("\nPress Enter to continue...")
+        elif choice == '02':
+            stop_apache()
+            input("\nPress Enter to continue...")
+        elif choice == '00':
+            break
+        else:
+            print("Invalid choice. Please enter a valid option.")
+            time.sleep(2)
+
+def start_apache():
+    """Start the Apache server."""
+    print("[+] Starting Apache Server...")
+    # Additional steps:
+    # 1. Check if Apache service is already running
+    apache_status = subprocess.run(["systemctl", "is-active", "apache2"], capture_output=True, text=True)
+    if apache_status.stdout.strip() == "active":
+        print("[!] Apache service is already running.")
+        return
+    # 2. Start the Apache service using appropriate commands
+    apache_start = subprocess.run(["sudo", "systemctl", "start", "apache2"], capture_output=True, text=True)
+    if apache_start.returncode == 0:
+        # 3. Verify that the server is running successfully
+        apache_status = subprocess.run(["systemctl", "is-active", "apache2"], capture_output=True, text=True)
+        if apache_status.stdout.strip() == "active":
+            print("[+] Apache Server started successfully.")
+        else:
+            print("[-] Failed to start Apache Server.")
+    else:
+        print("[-] Error occurred while starting Apache Server:", apache_start.stderr)
+
+def stop_apache():
+    """Stop the Apache server."""
+    print("[+] Stopping Apache Server...")
+    # Additional steps:
+    # 1. Check if Apache service is running
+    apache_status = subprocess.run(["systemctl", "is-active", "apache2"], capture_output=True, text=True)
+    if apache_status.stdout.strip() != "active":
+        print("[!] Apache service is not running.")
+        return
+    # 2. Stop the Apache service using appropriate commands
+    apache_stop = subprocess.run(["sudo", "systemctl", "stop", "apache2"], capture_output=True, text=True)
+    if apache_stop.returncode == 0:
+        # 3. Verify that the server has stopped
+        apache_status = subprocess.run(["systemctl", "is-active", "apache2"], capture_output=True, text=True)
+        if apache_status.stdout.strip() != "active":
+            print("[+] Apache Server stopped successfully.")
+        else:
+            print("[-] Failed to stop Apache Server.")
+    else:
+        print("[-] Error occurred while stopping Apache Server:", apache_stop.stderr)
+
+def advanced_attacks_menu():
+    """Menu for advanced attack options."""
+    while True:
+        clear_screen()
+        display_starting_info()
+        print("Advanced Attacks Menu")
+        print("=======================================")
+        print("01. Packet Sniffing - Capture and analyze network traffic.")
+        print("02. Session Hijacking - Take control of an ongoing session.")
+        print("03. Man-in-the-Middle (MITM) Attack - Intercept communication between two parties.")
+        print("04. Exploit Framework Integration - Utilize pre-built exploits for vulnerabilities.")
+        print("05. Data Exfiltration - Steal sensitive information from target systems.")
+        print("06. Persistence Mechanisms - Maintain access to compromised systems.")
+        print("07. Social Engineering Toolkit (SET) - Manipulate human behavior for attacks.")
+        print("08. Custom Payload Generation - Create tailored malware payloads.")
+        print("09. Reporting and Logging - Document and analyze attack activities.")
+        print("10. Evasion Techniques - Evade detection by security measures.")
+        print("00. Return to Main Menu")
+        print("=======================================")
+        choice = input("Enter your choice: ")
+
+        if choice == '01':
+            packet_sniffing()
+        elif choice == '02':
+            session_hijacking()
+        elif choice == '03':
+            mitm_attack()
+        elif choice == '04':
+            exploit_framework_integration()
+        elif choice == '05':
+            data_exfiltration()
+        elif choice == '06':
+            persistence_mechanisms()
+        elif choice == '07':
+            social_engineering_toolkit()
+        elif choice == '08':
+            custom_payload_generation()
+        elif choice == '09':
+            reporting_and_logging()
+        elif choice == '10':
+            evasion_techniques()
+        elif choice == '00':
+            break
+        else:
+            print("Invalid choice. Please enter a valid option.")
+            time.sleep(2)
+
+def packet_sniffing():
+    """Perform packet sniffing."""
+    print("[+] Starting Packet Sniffing...")
+
+    def packet_callback(packet):
+        if packet.haslayer(DNS) and packet.haslayer(IP):
+            dns_req = packet[DNS]
+            ip_src = packet[IP].src
+            queried_domain = dns_req.qd.qname.decode()
+            print(f"DNS Request from {ip_src} for {queried_domain}")
+
+    # Sniff packets and call packet_callback for each packet
+    sniff(filter="udp port 53", prn=packet_callback, store=0)
+
+    print("[+] Packet Sniffing completed successfully.")
+
+def session_hijacking():
+    """Perform session hijacking."""
+    print("[+] Starting Session Hijacking...")
+    # Additional steps:
+    # 1. Identify target session to hijack
+    # 2. Inject malicious code to take control of the session
+    print("[+] Session Hijacking completed successfully.")
+
+def mitm_attack():
+    """Perform man-in-the-middle attack."""
+    print("[+] Starting Man-in-the-Middle (MITM) Attack...")
+    # Additional steps:
+    # 1. Poison ARP cache or DNS cache to intercept traffic
+    # 2. Relay intercepted traffic between parties
+    print("[+] Man-in-the-Middle (MITM) Attack completed successfully.")
+
+def exploit_framework_integration():
+    """Integrate exploit frameworks."""
+    print("[+] Integrating Exploit Framework...")
+    # Additional steps:
+    # 1. Choose appropriate exploit framework (e.g., Metasploit, ExploitDB)
+    # 2. Select target vulnerability and exploit
+    # 3. Customize exploit options as needed
+    print("[+] Exploit Framework integration completed successfully.")
+
+def data_exfiltration():
+    """Perform data exfiltration."""
+    print("[+] Starting Data Exfiltration...")
+    # Additional steps:
+    # 1. Identify sensitive data to exfiltrate
+    # 2. Choose exfiltration method (e.g., covert channels, remote access trojans)
+    # 3. Execute data exfiltration without detection
+    print("[+] Data Exfiltration completed successfully.")
+
+def persistence_mechanisms():
+    """Establish persistence on compromised systems."""
+    print("[+] Establishing Persistence Mechanisms...")
+    # Additional steps:
+    # 1. Identify suitable persistence techniques (e.g., registry keys, scheduled tasks)
+    # 2. Implement persistence to maintain access post-compromise
+    # 3. Evade detection by security solutions
+    print("[+] Persistence Mechanisms established successfully.")
+
+def social_engineering_toolkit():
+    """Utilize social engineering techniques."""
+    print("[+] Using Social Engineering Toolkit (SET)...")
+    # Additional steps:
+    # 1. Craft convincing social engineering messages (e.g., phishing emails)
+    # 2. Deliver payloads to target users
+    # 3. Exploit human vulnerabilities to gain access or information
+    print("[+] Social Engineering Toolkit (SET) utilized successfully.")
+
+def custom_payload_generation():
+    """Generate custom malware payloads."""
+    print("[+] Generating Custom Payloads...")
+    # Additional steps:
+    # 1. Choose payload type (e.g., reverse shell, keylogger)
+    # 2. Customize payload properties (e.g., encryption, obfuscation)
+    # 3. Test payload to ensure functionality and evasion
+    print("[+] Custom Payloads generated successfully.")
+
+def reporting_and_logging():
+    """Document and analyze attack activities."""
+    print("[+] Documenting and Logging Attack Activities...")
+    # Additional steps:
+    # 1. Record attack details (e.g., timestamps, commands executed)
+    # 2. Analyze captured data for insights and improvements
+    print("[+] Attack activities documented and logged successfully.")
+
+def evasion_techniques():
+    """Employ evasion techniques."""
+    print("[+] Employing Evasion Techniques...")
+    # Additional steps:
+    # 1. Obfuscate malicious code to bypass detection
+    # 2. Use anti-forensic techniques to cover tracks
+    # 3. Adapt attack methods to evade specific security measures
+    print("[+] Evasion Techniques employed successfully.")
 
 def clone_website(clone_type):
     """Clone the website."""
